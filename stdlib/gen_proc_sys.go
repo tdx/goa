@@ -290,7 +290,7 @@ func (gps *GenProcSys) Run(gp GenProc, opts *SpawnOpts, args ...Term) {
 	//
 	// link processes
 	//
-	// opts.linkPid is a parent proccess, who initiates link
+	// opts.linkPid is a parent process, who initiates link
 	//
 	if opts.linkPid != nil {
 		gps.Link(opts.linkPid)

@@ -1,9 +1,5 @@
 package stdlib
 
-import (
-// "fmt"
-)
-
 //
 // Term is a type for any values
 //
@@ -90,14 +86,14 @@ func (pid *Pid) send(ct callType, data Term) (err error) {
 }
 
 //
-// Call sends sync message to the usr channel of ther process
+// Call sends sync message to the usr channel of the process
 //
 func (pid *Pid) Call(data Term) (Term, error) {
 	return pid.call(callTypeUsr, data)
 }
 
 //
-// CallSys sends sync sys message to the sys channel of ther process
+// CallSys sends sync sys message to the sys channel of the process
 //
 func (pid *Pid) CallSys(data Term) (Term, error) {
 	return pid.call(callTypeSys, data)

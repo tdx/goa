@@ -27,7 +27,7 @@ func (e *Env) MakeRef() Ref {
 }
 
 //
-// String returns string presentaion of ref
+// String returns string presentation of ref
 //
 func (r Ref) String() string {
 	return fmt.Sprintf("#ref<0.%d.%d>", r.envID, r.id)

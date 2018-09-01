@@ -30,7 +30,7 @@ func IsNoProcError(err error) bool {
 }
 
 //
-// Returns string representaion of noProcError
+// Returns string representation of noProcError
 //
 func (e noProcError) Error() string {
 	return NoProc
