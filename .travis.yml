@@ -9,6 +9,9 @@ go:
 
 before_install:
   - go get github.com/mattn/goveralls
+  - go get github.com/golang/lint/golint
+  - go get github.com/fzipp/gocyclo
+  - go get github.com/kisielk/errcheck
 
 install:
   - go get -t -v ./...
