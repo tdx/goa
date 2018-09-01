@@ -8,7 +8,6 @@ go:
   - tip
 
 before_install:
-  - go get github.com/mattn/goveralls
   - go get github.com/golang/lint/golint
   - go get github.com/fzipp/gocyclo
   - go get github.com/kisielk/errcheck
@@ -23,5 +22,7 @@ script:
     - errcheck -ignoretests $(go list ./... | grep -v /vendor/)
     - gocyclo -avg -over 20 .
     - go test -race $(go list ./... | grep -v /vendor/)
-    - go test -covermode=count -coverprofile=$HOME/profile.cov $(go list ./... | grep -v /vendor/)
-    - $HOME/gopath/bin/goveralls -coverprofile=$HOME/profile.cov -service=travis-ci    
+    - go test -covermode=atomic -coverprofile=profile.cov $(go list ./... | grep -v /vendor/)
+
+after_success:
+    - bash <(curl -s https://codecov.io/bash)
