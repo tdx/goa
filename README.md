@@ -1,6 +1,7 @@
 # Goa
 
 The purpose of the library is to hide low-level communication with channels using the model of actors.
+
 The ideas from [Erlang OTP] were taken as a basis.
 
 Goa allows you
