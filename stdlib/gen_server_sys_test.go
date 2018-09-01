@@ -217,7 +217,7 @@ func TestGenServerCallNoReply(t *testing.T) {
 		t.Fatalf("exprected boolean return 'true', actual %#v", reply)
 	}
 
-	reply, err = pid.Call("noReplyTimeout")
+	_, err = pid.Call("noReplyTimeout")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -450,14 +450,14 @@ func TestGenServerMonitorDownInMonitor(t *testing.T) {
 	}
 	defer pid.Stop()
 
-	reply, err := pid.Call("startBadMonitor")
+	_, err = pid.Call("startBadMonitor")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	time.Sleep(time.Duration(30) * time.Millisecond)
 
-	reply, err = pid.Call("monitorMessage")
+	reply, err := pid.Call("monitorMessage")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -477,12 +477,12 @@ func TestGenServerMonitorDownFromFlush(t *testing.T) {
 	}
 	defer pid.Stop()
 
-	reply, err := pid.Call("startBadMonitor2")
+	_, err = pid.Call("startBadMonitor2")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	reply, err = pid.Call("monitorMessage")
+	reply, err := pid.Call("monitorMessage")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -789,6 +789,7 @@ func (gs *ts) Init(args ...Term) Term {
 				case "crash":
 					a := 10
 					a = a / (a - 10)
+					fmt.Println(a) // just to hide ineffAsign warning
 
 				case "badReturn":
 					return 123

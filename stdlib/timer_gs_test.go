@@ -36,6 +36,9 @@ func TestTimerGsSend(t *testing.T) {
 	}
 
 	_, err = pid.Call(&startTimerReq{15, "after 15", false})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	time.Sleep(time.Duration(100) * time.Millisecond)
 

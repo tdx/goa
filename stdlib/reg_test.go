@@ -161,6 +161,9 @@ func TestGenServerRegUnregName(t *testing.T) {
 	// no regs in new env
 	env2 := NewEnv()
 	pid2, err := env2.GenServerStart(new(rs))
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = pid2.Unregister(regTestName)
 	if !IsNotRegError(err) {
 		t.Fatalf("exprected '%s' error, actual '%s'", NameEmptyError, err)
@@ -296,7 +299,7 @@ func TestGenServerRegWhereare(t *testing.T) {
 		t.Fatalf("expected '%s' error, actual %s'", PrefixEmptyError, err)
 	}
 
-	pids, err := env2.Whereare(regTestName)
+	_, err = env2.Whereare(regTestName)
 	if !IsNotRegError(err) {
 		t.Fatalf("expected '%s' error, actual '%s'", NotRegError, err)
 	}
@@ -310,12 +313,12 @@ func TestGenServerRegWhereare(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pids, err = env2.Whereare(regTestPrefixTwo)
+	_, err = env2.Whereare(regTestPrefixTwo)
 	if !IsNotRegError(err) {
 		t.Fatalf("expected '%s' error, actual '%s'", NotRegError, err)
 	}
 
-	pids, err = env2.Whereare(regTestPrefixOne)
+	pids, err := env2.Whereare(regTestPrefixOne)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -330,6 +333,9 @@ func TestGenServerRegWhereare(t *testing.T) {
 	}
 
 	pids, err = env2.Whereare(regTestPrefixOne)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(pids) != 0 {
 		t.Fatalf("expected group '%s' has 0 member, actual %d",
 			regTestPrefixOne, len(pids))
@@ -349,6 +355,9 @@ func TestGenServerRegWhereare(t *testing.T) {
 	}
 
 	pids, err = env2.Whereare(regTestPrefixOne)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(pids) != 3 {
 		t.Fatalf("expected group '%s' has 3 member, actual %d",
 			regTestPrefixOne, len(pids))

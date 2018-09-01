@@ -22,6 +22,9 @@ func TestGenChannelErrorFull(t *testing.T) {
 	pid, err := SpawnWithOpts(
 		genTestFailFunc,
 		NewSpawnOpts().WithUsrChannelSize(1))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if err = pid.Send("test1"); err != nil {
 		t.Fatal(err)
@@ -36,6 +39,9 @@ func TestGenChannelErrorFull(t *testing.T) {
 	pid2, err := SpawnWithOpts(
 		genTestFailFunc,
 		NewSpawnOpts().WithSysChannelSize(1))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if err = pid2.SendSys("test1"); err != nil {
 		t.Fatal(err)
@@ -50,6 +56,9 @@ func TestGenChannelErrorFull(t *testing.T) {
 
 func TestGenChannelErrorNoProc(t *testing.T) {
 	pid, err := Spawn(genTestFastReturnFunc)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	time.Sleep(time.Duration(50) * time.Millisecond)
 
@@ -61,6 +70,9 @@ func TestGenChannelErrorNoProc(t *testing.T) {
 	}
 
 	pid2, err := Spawn(genTestFastReturnFunc)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	time.Sleep(time.Duration(50) * time.Millisecond)
 
