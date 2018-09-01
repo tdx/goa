@@ -10,5 +10,5 @@ Goa allows you
   - Establish one-way relation between processes using monitors
 
 
-  [otp]: <http://erlang.org>
+  [Erlang OTP]: http://www.erlang.org
 
