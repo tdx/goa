@@ -22,5 +22,6 @@ script:
     - golint $(go list ./... | grep -v /vendor/)
     - errcheck -ignoretests $(go list ./... | grep -v /vendor/)
     - gocyclo -avg -over 20 .
-    - go test -race -covermode=count -coverprofile=profile.cov $(go list ./... | grep -v /vendor/)
+    - go test -race $(go list ./... | grep -v /vendor/)
+    - go test -covermode=count -coverprofile=profile.cov $(go list ./... | grep -v /vendor/)
     - $HOME/gopath/bin/goveralls -coverprofile=profile.cov -service=travis-ci    
