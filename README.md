@@ -1,6 +1,6 @@
 # Goa
 
-[![][go-report-svg]][go-report-url] 
+[![][go-report-svg]][go-report-url] [![][travis-svg]][travis-url]
 
 The purpose of the library is to hide low-level communication with channels using the model of actors.
 
@@ -14,5 +14,9 @@ Goa allows you
 
 
   [Erlang OTP]: http://www.erlang.org
+
   [go-report-url]: https://goreportcard.com/report/github.com/tdx/goa
   [go-report-svg]: https://goreportcard.com/badge/github.com/tdx/goa
+
+  [travis-url]: https://travis-ci.org/tdx/goa
+  [travis-svg]: https://travis-ci.org/tdx/goa.svg?branch=master
