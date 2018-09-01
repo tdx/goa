@@ -1,5 +1,7 @@
 # Goa
 
+[![][go-report-svg]][go-report-url] 
+
 The purpose of the library is to hide low-level communication with channels using the model of actors.
 
 The ideas from [Erlang OTP] were taken as a basis.
@@ -12,4 +14,5 @@ Goa allows you
 
 
   [Erlang OTP]: http://www.erlang.org
-
+  [go-report-url]: https://goreportcard.com/report/github.com/tdx/goa
+  [go-report-svg]: https://goreportcard.com/badge/github.com/tdx/goa
