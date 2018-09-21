@@ -1,7 +1,6 @@
 package stdlib
 
 import (
-	// "fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -196,7 +195,6 @@ func (e *Env) spawnObjOpts(
 	}
 
 	pid, newPid, err := e.newPid(opts)
-	// fmt.Println("newPid:", pid)
 	if err != nil {
 		return nil, err
 	}

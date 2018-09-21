@@ -289,6 +289,14 @@ func TestGenServerRegPrefixName(t *testing.T) {
 	if err := pid2.RegisterPrefix(regTestPrefixTwo, regTestName); err != nil {
 		t.Fatal(err)
 	}
+
+	pid3, err := env2.WhereisPrefix(regTestPrefixTwo, regTestName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !pid2.Equal(pid3) {
+		t.Fatalf("pids not equal!")
+	}
 }
 
 func TestGenServerRegWhereare(t *testing.T) {

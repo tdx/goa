@@ -28,8 +28,9 @@ type unregNameReq struct {
 }
 
 type whereisReq struct {
-	name Term
-	pid  *Pid
+	prefix string
+	name   Term
+	pid    *Pid
 }
 
 type regPrefixNameReq struct {
@@ -153,6 +154,24 @@ func (e *Env) whereis(name Term) (*Pid, error) {
 	}
 
 	r := &whereisReq{name: name}
+	_, err := e.gs.Call(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.pid, nil
+}
+
+func (e *Env) whereisPrefix(prefix string, name Term) (*Pid, error) {
+	if name == "" {
+		return nil, NameEmptyError
+	}
+
+	if prefix == "" {
+		return nil, PrefixEmptyError
+	}
+
+	r := &whereisReq{prefix: prefix, name: name}
 	_, err := e.gs.Call(r)
 	if err != nil {
 		return nil, err
@@ -374,13 +393,32 @@ func (gs *envGs) unregNameByRef(ref Ref) {
 }
 
 func (gs *envGs) whereis(r *whereisReq) Term {
-	if gs.regName == nil {
+
+	// find by name
+	if r.prefix == "" {
+
+		if gs.regName == nil {
+			return NotRegError
+		}
+
+		if pid, ok := gs.regName[r.name]; ok {
+			r.pid = pid
+			return true
+		}
+
 		return NotRegError
 	}
 
-	if pid, ok := gs.regName[r.name]; ok {
-		r.pid = pid
-		return true
+	// find by prefix+name
+	if gs.regPrefix == nil {
+		return NotRegError
+	}
+
+	if pids, ok := gs.regPrefix[r.prefix]; ok {
+		if pid, pidOk := pids[r.name]; pidOk {
+			r.pid = pid
+			return true
+		}
 	}
 
 	return NotRegError

@@ -55,6 +55,13 @@ func (pid *Pid) UnregisterPrefix(prefix string, name Term) error {
 }
 
 //
+// WhereisPrefix lookups process by prefix and name
+//
+func (e *Env) WhereisPrefix(prefix string, name Term) (*Pid, error) {
+	return e.whereisPrefix(prefix, name)
+}
+
+//
 // Whereare lookups processes by prefix
 //
 func (e *Env) Whereare(prefix string) (RegMap, error) {

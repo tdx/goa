@@ -46,7 +46,7 @@ func TimerSendAfter(timeMs uint32, pid *Pid, msg Term) (Term, error) {
 }
 
 //
-// TimerSendInterval add interval timer
+// TimerSendInterval adds interval timer
 //
 func TimerSendInterval(timeMs uint32, pid *Pid, msg Term) (Term, error) {
 
