@@ -25,7 +25,7 @@ func (pid *Pid) SendAfter(data Term, timeoutMs uint32) *Timer {
 	timer := time.AfterFunc(
 		time.Duration(timeoutMs)*time.Millisecond,
 		func() {
-			_ = pid.SendInfo(data)
+			_ = pid.Send(data)
 		},
 	)
 

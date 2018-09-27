@@ -28,7 +28,7 @@ func TestGenServerSysCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := pid.Send("alive"); !IsNoProcError(err) {
+	if err := pid.Cast("alive"); !IsNoProcError(err) {
 		t.Fatalf("%s: expected '%s' error, actual '%v'", pid, NoProcError, err)
 	}
 }
@@ -70,7 +70,7 @@ func TestGenServerInitOk(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := pid.Send("alive"); !IsNoProcError(err) {
+	if err := pid.Cast("alive"); !IsNoProcError(err) {
 		t.Fatalf("expected '%s' error, actual %v", NoProcError, err)
 	}
 }
@@ -240,7 +240,7 @@ func TestGenServerSend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = pid.Send("return error"); err != nil {
+	if err = pid.Cast("return error"); err != nil {
 		t.Fatal(err)
 	}
 	_, err = pid.Call("ping")
@@ -253,7 +253,7 @@ func TestGenServerSend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = pid.Send("stopNormal"); err != nil {
+	if err = pid.Cast("stopNormal"); err != nil {
 		t.Fatal(err)
 	}
 	_, err = pid.Call("ping")
@@ -266,7 +266,7 @@ func TestGenServerSend(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = pid.Send("stopBad"); err != nil {
+	if err = pid.Cast("stopBad"); err != nil {
 		t.Fatal(err)
 	}
 	_, err = pid.Call("ping")
@@ -280,7 +280,7 @@ func TestGenServerSend(t *testing.T) {
 	}
 	defer pid.Stop()
 
-	if err = pid.Send("timeout"); err != nil {
+	if err = pid.Cast("timeout"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -389,7 +389,7 @@ func TestGenServerUnlinkFromFastExitGenProc(t *testing.T) {
 
 	var i int
 	var links []*Pid
-	delay := time.Duration(5) * time.Millisecond
+	delay := time.Duration(20) * time.Millisecond
 
 	for i = 0; i < 5; i++ {
 
@@ -431,7 +431,7 @@ func TestGenServerMonitorDownAfterMonitorOk(t *testing.T) {
 		}
 		time.Sleep(time.Duration(30) * time.Millisecond)
 	default:
-		t.Fatalf("exporecte reply '*Pid', actual '%#v'", funcPid)
+		t.Fatalf("expected reply '*Pid', actual '%#v'", funcPid)
 	}
 
 	reply, err = pid.Call("monitorMessage")
@@ -507,7 +507,7 @@ func TestGenServerMonitorDemonitorNoMessage(t *testing.T) {
 
 	switch funcPid := reply.(type) {
 	case *Pid:
-		if err := funcPid.Send("exit"); err != nil {
+		if err := funcPid.Cast("exit"); err != nil {
 			t.Fatal(err)
 		}
 		time.Sleep(time.Duration(30) * time.Millisecond)
@@ -759,22 +759,19 @@ func testMonFunc(gp GenProc, args ...Term) error {
 			}
 		case m := <-usr:
 			switch m := m.(type) {
-			case *AsyncReq:
-				switch data := m.Data.(type) {
-				case string:
-					switch data {
-					case "exit":
-						return errors.New("exit")
-					}
+			case string:
+				switch m {
+				case "exit":
+					return errors.New("exit")
 				}
+				// 	}
 			}
-			// case <-time.After(time.Duration(10) * time.Millisecond):
-			// 	return errors.New("timeout")
 		}
 	}
 }
 
 func testFastExitFunc(gp GenProc, args ...Term) error {
+	// gp.SetTracer(TraceToConsole())
 	TraceCall(gp.Tracer(), gp.Self(), "testFastExitFunc", "fast exit func")
 	return nil
 }
@@ -1044,7 +1041,7 @@ func BenchmarkCastPid(b *testing.B) {
 
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				_ = pid.Send("ping")
+				_ = pid.Cast("ping")
 			}
 		})
 	}

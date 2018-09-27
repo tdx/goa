@@ -87,7 +87,7 @@ func TestGtsOsTraverseMany(t *testing.T) {
 		tab.Insert(k, v)
 	}
 
-	tab.Print()
+	// tab.Print()
 
 	for k, v, ok := tab.First(); ok; k, v, ok = tab.Next() {
 		t.Log(k, v)
@@ -129,7 +129,7 @@ func TestGtsOsDeleteInLoop(t *testing.T) {
 		tab.Insert(v.key, v.val)
 	}
 
-	tab.Print()
+	// tab.Print()
 
 	for k, v, ok := tab.First(); ok; k, v, ok = tab.Next() {
 		if v == "t4" {
@@ -137,7 +137,7 @@ func TestGtsOsDeleteInLoop(t *testing.T) {
 		}
 	}
 
-	tab.Print()
+	// tab.Print()
 
 	if tab.Size() != 7 {
 		t.Fatalf("expected tab size 0, actual %d", tab.Size())
@@ -206,7 +206,7 @@ func TestGtsOsStruct(t *testing.T) {
 	tab.Insert(&t5, 5)
 	tab.Insert(&t6, 6)
 
-	tab.Print()
+	// tab.Print()
 
 	for k, v, ok := tab.First(); ok; k, v, ok = tab.First() {
 		t.Log(k, v)

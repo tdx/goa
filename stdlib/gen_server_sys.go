@@ -212,9 +212,9 @@ func (gs *GenServerSys) GenProcLoop(args ...Term) (err error) {
 					return
 				}
 
-			case *SysReq:
+			default:
 
-				if timeout, err = gs.doInfo(m.Data); err != nil {
+				if timeout, err = gs.doInfo(m); err != nil {
 					return
 				}
 

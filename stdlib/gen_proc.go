@@ -12,7 +12,7 @@ type GenProc interface {
 	//
 	// Handle sys messages for process
 	//
-	HandleSysMsg(msg *SysReq) error
+	HandleSysMsg(msg Term) error
 
 	//
 	// Process flag

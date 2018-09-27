@@ -58,7 +58,7 @@ func TestTimerSendAfterOutsideProcess(t *testing.T) {
 
 			f := func() {
 				m.fired = time.Now()
-				_ = pid.SendInfo(m)
+				_ = pid.Send(m)
 			}
 
 			pid.RunAfter(f, 55)

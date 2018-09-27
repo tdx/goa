@@ -43,7 +43,7 @@ func loop(gp GenProc, args ...Term) error {
 
 			case *SyncReq:
 
-				// TraceCall(gp.Tracer(), gp.Self(), "SyncReq:", r.Data)
+				TraceCall(gp.Tracer(), gp.Self(), "SyncReq:", r.Data)
 
 				switch data := r.Data.(type) {
 				case string:
@@ -58,13 +58,13 @@ func loop(gp GenProc, args ...Term) error {
 				}
 				r.ReplyChan <- "ok"
 
-			case *SysReq:
+			default:
 
-				// TraceCall(gp.Tracer(), gp.Self(), "SysReq:", r)
+				TraceCall(gp.Tracer(), gp.Self(), "AsyncReq:", r)
 
-				switch e := r.Data.(type) {
+				switch m := m.(type) {
 				case *ExitPidReq:
-					lastExitReason = e.Reason
+					lastExitReason = m.Reason
 				}
 			}
 
@@ -74,7 +74,7 @@ func loop(gp GenProc, args ...Term) error {
 
 func TestGenProcTest(t *testing.T) {
 
-	// pid, err := env.spawn(loop, "debug", "trapExit")
+	// pid, err := env.Spawn(loop, "debug", "trapExit")
 	pid, err := env.Spawn(loop)
 	if err != nil {
 		t.Fatal(err)
@@ -83,7 +83,7 @@ func TestGenProcTest(t *testing.T) {
 	}
 	defer pid.Stop()
 
-	if err := pid.Send("hello, beautiful gen proc!"); err != nil {
+	if err := pid.Cast("hello, beautiful gen proc!"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -246,9 +246,12 @@ func TestGenProcExit2(t *testing.T) {
 	// tests := []*testExit2{
 	// 	&t5,
 	// }
-	for _, s := range tests {
+	for i, s := range tests {
 		// fmt.Printf("test: %d\n", i+1)
-		exit2(s, t)
+		t.Run(fmt.Sprintf("%d", i+1),
+			func(t *testing.T) {
+				exit2(s, t)
+			})
 	}
 
 	//                   |  A no trap        |  B no trap

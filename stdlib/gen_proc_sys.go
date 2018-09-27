@@ -73,7 +73,7 @@ func (gps *GenProcSys) SetTracer(t Tracer) {
 }
 
 //
-// Tracer return current tracer of the process
+// Tracer returns current tracer of the process
 //
 func (gps *GenProcSys) Tracer() Tracer {
 	return gps.tracer
@@ -82,23 +82,31 @@ func (gps *GenProcSys) Tracer() Tracer {
 //
 // HandleSysMsg handles system messages for the process
 //
-func (gps *GenProcSys) HandleSysMsg(msg *SysReq) (err error) {
+func (gps *GenProcSys) HandleSysMsg(msg Term) (err error) {
 
 	TraceCall(gps.Tracer(), gps.Self(), traceFuncHSM, msg)
 	ts := time.Now()
 	defer TraceCallResult(gps.Tracer(), gps.Self(), &ts, traceFuncHSM, msg, err)
 
-	switch r := msg.Data.(type) {
+	switch r := msg.(type) {
+	case *SysReq:
+		// Call boxed in SysReq struct
+		err = gps.handleSyncMsg(r)
+	default:
+		// Raw send message
+		err = gps.handleAsyncMsg(msg)
+	}
+	return
+}
+
+func (gps *GenProcSys) handleAsyncMsg(msg Term) (err error) {
+	switch r := msg.(type) {
 
 	case *LinkPidReq:
 		gps.link(r.Pid)
 
 	case *UnlinkPidReq:
 		_ = gps.unlink(r.Pid)
-
-	case *ProcessLinksReq:
-		r.Links = gps.processLinks()
-		msg.ReplyChan <- true
 
 	case *ExitPidReq:
 
@@ -121,7 +129,24 @@ func (gps *GenProcSys) HandleSysMsg(msg *SysReq) (err error) {
 	case *MonitorDownReq:
 
 		gps.demonitorByMe(r.MonitorRef)
-		_ = gps.pid.SendInfo(r)
+		_ = gps.pid.Send(r)
+
+	}
+
+	return
+}
+
+func (gps *GenProcSys) handleSyncMsg(msg *SysReq) (err error) {
+
+	switch r := msg.Data.(type) {
+
+	case *ProcessLinksReq:
+		r.Links = gps.processLinks()
+		msg.ReplyChan <- true
+
+	default:
+		err = gps.handleAsyncMsg(r)
+
 	}
 
 	return
@@ -158,7 +183,7 @@ func (gps *GenProcSys) doExitPid(r *ExitPidReq) error {
 		//
 		// redirect message to usr channel
 		//
-		_ = gps.pid.SendInfo(r)
+		_ = gps.pid.Send(r)
 
 		return nil
 	}
@@ -244,7 +269,7 @@ func (gps *GenProcSys) monitorProcessPid(ref Ref, pid *Pid) {
 		//
 		// nothing to handle in sys level -> send to usr level
 		//
-		_ = gps.pid.SendInfo(&MonitorDownReq{ref, pid, err.Error()})
+		_ = gps.pid.Send(&MonitorDownReq{ref, pid, err.Error()})
 	}
 }
 
@@ -281,7 +306,7 @@ func (gps *GenProcSys) Run(gp GenProc, opts *SpawnOpts, args ...Term) {
 		}
 
 		TraceCall(
-			gp.Tracer(), gp.Self(), "gp: run.defer, exitReason:", exitReason)
+			gp.Tracer(), gp.Self(), "gp: run.defer, exitReason", exitReason)
 
 		gps.onStop(exitReason)
 		gps.flushMessages(gps.pid)
@@ -425,7 +450,7 @@ func (gps *GenProcSys) flushMessages(pid *Pid) {
 				continue
 			}
 
-			switch r := m.Data.(type) {
+			switch r := m.(type) {
 
 			case *LinkPidReq:
 				_ = gps.pid.exitReason(r.Pid, NoProc, true)
@@ -434,19 +459,6 @@ func (gps *GenProcSys) flushMessages(pid *Pid) {
 				gps.pid.monitorDown(r.PidFrom, r.MonitorRef, NoProc)
 
 			}
-
-		// case m := <-pid.usrChan:
-
-		// 	if m == nil {
-		// 		continue
-		// 	}
-
-		// 	switch m := m.(type) {
-
-		// 	case *SyncReq:
-
-		// 		gps.traceCall("gp: flush usr channel", m)
-		// 	}
 
 		default:
 			stop = true

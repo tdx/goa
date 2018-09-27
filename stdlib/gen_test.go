@@ -9,7 +9,7 @@ import (
 func TestGenSendNilPid(t *testing.T) {
 	var pid *Pid
 
-	if err := pid.Send("test"); !IsNilPidError(err) {
+	if err := pid.Cast("test"); !IsNilPidError(err) {
 		t.Fatalf("expected %s error, actual %s", NilPidError, err)
 	}
 
@@ -26,10 +26,10 @@ func TestGenChannelErrorFull(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = pid.Send("test1"); err != nil {
+	if err = pid.Cast("test1"); err != nil {
 		t.Fatal(err)
 	}
-	if err = pid.Send("test2"); !IsChannelFullError(err) {
+	if err = pid.Cast("test2"); !IsChannelFullError(err) {
 		t.Fatalf("expected %s error, actual %s", ChannelFullError, err)
 	}
 	if _, err = pid.Call("test3"); !IsChannelFullError(err) {
@@ -62,7 +62,7 @@ func TestGenChannelErrorNoProc(t *testing.T) {
 
 	time.Sleep(time.Duration(50) * time.Millisecond)
 
-	if err = pid.Send("test1"); !IsNoProcError(err) {
+	if err = pid.Cast("test1"); !IsNoProcError(err) {
 		t.Fatalf("expected %s error, actual %s", NoProcError, err)
 	}
 	if _, err = pid.Call("test2"); !IsNoProcError(err) {

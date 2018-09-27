@@ -31,9 +31,9 @@ type SysReq struct {
 type callType int
 
 const (
-	callTypeSys    = 0
-	callTypeUsr    = 1
-	callTypeSysUsr = 2
+	callTypeSys  = 0
+	callTypeUsr  = 1
+	callTypeCast = 2
 )
 
 //
@@ -51,10 +51,10 @@ func (pid *Pid) SendSys(data Term) error {
 }
 
 //
-// SendInfo sends sys async message to the usr channel of the process
+// Cast sends *AsyncMsg message to the usr channel of the process
 //
-func (pid *Pid) SendInfo(data Term) error {
-	return pid.send(callTypeSysUsr, data)
+func (pid *Pid) Cast(data Term) error {
+	return pid.send(callTypeCast, data)
 }
 
 func (pid *Pid) send(ct callType, data Term) (err error) {
@@ -72,13 +72,13 @@ func (pid *Pid) send(ct callType, data Term) (err error) {
 	switch ct {
 
 	case callTypeUsr:
-		err = pid.sendUsr(&AsyncReq{data})
+		err = pid.sendUsr(data)
 
 	case callTypeSys:
-		err = pid.sendSys(&SysReq{data, nil})
+		err = pid.sendSys(data)
 
-	case callTypeSysUsr:
-		err = pid.sendUsr(&SysReq{data, nil})
+	case callTypeCast:
+		err = pid.sendUsr(&AsyncReq{data})
 
 	}
 
@@ -181,7 +181,7 @@ func (pid *Pid) sendUsr(r Term) (err error) {
 	}
 }
 
-func (pid *Pid) sendSys(r *SysReq) (err error) {
+func (pid *Pid) sendSys(r Term) (err error) {
 	select {
 	case pid.sysChan <- r:
 		return nil

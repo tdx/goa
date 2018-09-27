@@ -13,7 +13,7 @@ type Pid struct {
 	env *Env
 
 	usrChan  chan Term
-	sysChan  chan *SysReq
+	sysChan  chan Term
 	exitChan chan bool
 }
 
@@ -23,7 +23,7 @@ func newPid(id uint64, e *Env, usrChanSize, sysChanSize int) *Pid {
 		id:       id,
 		env:      e,
 		usrChan:  make(chan Term, usrChanSize),
-		sysChan:  make(chan *SysReq, sysChanSize),
+		sysChan:  make(chan Term, sysChanSize),
 		exitChan: make(chan bool),
 	}
 
@@ -95,7 +95,7 @@ func (pid *Pid) GetUsrChannel() <-chan Term {
 //
 // GetSysChannel returns sys channel
 //
-func (pid *Pid) GetSysChannel() <-chan *SysReq {
+func (pid *Pid) GetSysChannel() <-chan Term {
 	if pid == nil {
 		return nil
 	}

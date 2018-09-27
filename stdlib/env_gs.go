@@ -237,19 +237,13 @@ func (gs *envGs) HandleCall(r Term, from From) Term {
 	return GsCallReplyOk
 }
 
-func (gs *envGs) HandleCast(r Term) Term {
-
-	switch r := r.(type) {
-	case *makeRefReq:
-		gs.regNewRef(r)
-	}
-
-	return GsNoReply
-}
-
 func (gs *envGs) HandleInfo(r Term) Term {
 
 	switch r := r.(type) {
+
+	case *makeRefReq:
+		gs.regNewRef(r)
+
 	case *MonitorDownReq:
 		gs.unregNameByRef(r.MonitorRef)
 	}

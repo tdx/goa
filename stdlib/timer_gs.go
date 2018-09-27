@@ -275,7 +275,7 @@ func (gs *tgs) cancelTimersByPid(pid *Pid) {
 }
 
 func (gs *tgs) send(op *timerArgs) {
-	_ = op.pid.SendInfo(op.msg)
+	_ = op.pid.Send(op.msg)
 }
 
 //
