@@ -18,14 +18,14 @@ func TraceToConsole() TracerFunc {
 			switch evt := evt.(type) {
 
 			case *Call:
-				fmt.Printf("%s %s %s %s %#v\n",
+				fmt.Printf("%s %s call -> %s(%#v)\n",
 					evt.Time.Truncate(time.Microsecond),
-					evt.Pid, "call:", evt.Tag, evt.Arg)
+					evt.Pid, evt.Tag, evt.Arg)
 
 			case *CallResult:
-				fmt.Println(evt.Time.Truncate(time.Microsecond),
-					evt.Pid, "call result:", evt.Tag, evt.Arg,
-					evt.Result, evt.Duration)
+				fmt.Printf("%s %s call <- %s(%#v)=%#v, %s\n",
+					evt.Time.Truncate(time.Microsecond),
+					evt.Pid, evt.Tag, evt.Arg, evt.Result, evt.Duration)
 			}
 		}
 	}
