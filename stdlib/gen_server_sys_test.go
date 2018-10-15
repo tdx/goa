@@ -159,6 +159,7 @@ func TestGenServerCall(t *testing.T) {
 	//  TODO: redesign, sometimes timeouts arrive much later
 	//
 	t6 := t1
+	// t6.initArg = "debug"
 	t6.opArg = &timeoutReq{"exitTimeout", 50, true, ExitNormal}
 	t6.expectedOpReply = "ok"
 	t6.expectedOpExitTimeout = 150
@@ -193,10 +194,12 @@ func TestGenServerCall(t *testing.T) {
 		&t6, &t7, &t8, &t9, &t10, &t11,
 	}
 	var pid *Pid
-	for i, s := range tests {
-		// fmt.Printf("%v ", i+1)
-
-		pid = doTestGs(i, pid, s, t)
+	for i := range tests {
+		s := tests[i]
+		t.Run(fmt.Sprintf("%v:", i+1),
+			func(t *testing.T) {
+				pid = doTestGs(i, pid, s, t)
+			})
 	}
 	// fmt.Printf("\n")
 }
@@ -533,8 +536,8 @@ func TestGenServerStartOpts(t *testing.T) {
 	}
 	defer pid.Stop()
 
-	opts = opts.WithSpawnOrLocate()
-	pid2, err := GenServerStartOpts(new(ts), opts)
+	opts2 := NewSpawnOpts().WithName("test1").WithSpawnOrLocate()
+	pid2, err := GenServerStartOpts(new(ts), opts2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -556,22 +559,23 @@ func TestGenServerStartOpts(t *testing.T) {
 	//
 	// with prefix
 	//
-	opts = NewSpawnOpts().WithName("test1").WithPrefix("group1")
-	pid3, err := GenServerStartOpts(new(ts), opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer pid3.Stop()
-
-	opts = opts.WithSpawnOrLocate()
-	pid4, err := GenServerStartOpts(new(ts), opts, "debug")
+	opts4 := NewSpawnOpts().WithName("test1").WithPrefix("group1")
+	pid4, err := GenServerStartOpts(new(ts), opts4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer pid4.Stop()
 
-	if pid3.ID() != pid4.ID() {
-		t.Fatalf("expected pid2=%s, actual %s", pid3, pid4)
+	opts5 := NewSpawnOpts().
+		WithName("test1").WithPrefix("group1").WithSpawnOrLocate()
+	pid5, err := GenServerStartOpts(new(ts), opts5, "debug")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pid5.Stop()
+
+	if pid4.ID() != pid5.ID() {
+		t.Fatalf("expected pid2=%s, actual %s", pid4, pid5)
 	}
 
 	//
@@ -801,7 +805,7 @@ func (gs *ts) Init(args ...Term) Term {
 					return gs.Stop("bad")
 
 				case "initTimeout":
-					return gs.InitTimeout(30)
+					return gs.InitTimeout(time.Duration(30) * time.Millisecond)
 
 				case "trapExit":
 					gs.SetTrapExit(true)
@@ -813,7 +817,7 @@ func (gs *ts) Init(args ...Term) Term {
 		}
 	}
 
-	return GsInitOk
+	return gs.InitOk()
 }
 
 func (gs *ts) HandleCall(req Term, from From) Term {
@@ -842,11 +846,11 @@ func (gs *ts) HandleCall(req Term, from From) Term {
 
 	case *unlinkReq:
 		gs.Unlink(req.pid)
-		return GsCallReplyOk
+		return gs.CallReplyOk()
 
 	}
 
-	return GsCallReplyOk
+	return gs.CallReplyOk()
 }
 
 func (gs *ts) HandleCast(req Term) Term {
@@ -865,7 +869,7 @@ func (gs *ts) HandleCast(req Term) Term {
 		}
 	}
 
-	return GsNoReply
+	return gs.NoReply()
 }
 
 func (gs *ts) HandleInfo(req Term) Term {
@@ -909,7 +913,7 @@ func (gs *ts) HandleInfo(req Term) Term {
 		}
 	}
 
-	return GsNoReply
+	return gs.NoReply()
 }
 
 func (gs *ts) handleString(req string, from From) Term {
@@ -935,7 +939,7 @@ func (gs *ts) handleString(req string, from From) Term {
 			time.Sleep(time.Duration(20) * time.Millisecond)
 			gs.Reply(from, true)
 		}()
-		return GsNoReply
+		return gs.NoReply()
 
 	case "noReplyTimeout":
 		go func() {
@@ -1042,6 +1046,21 @@ func BenchmarkCastPid(b *testing.B) {
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				_ = pid.Cast("ping")
+			}
+		})
+	}
+}
+
+func BenchmarkSendPid(b *testing.B) {
+	pid, err := GenServerStart(new(ts))
+	if err == nil {
+
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		b.RunParallel(func(pb *testing.PB) {
+			for pb.Next() {
+				_ = pid.Send("ping")
 			}
 		})
 	}

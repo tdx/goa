@@ -202,7 +202,7 @@ func (gs *envGs) Init(args ...Term) Term {
 	gs.SetTrapExit(true)
 	// gs.SetTracer(TraceToConsole())
 
-	return GsInitOk
+	return gs.InitOk()
 }
 
 func (gs *envGs) HandleCall(r Term, from From) Term {
@@ -234,7 +234,7 @@ func (gs *envGs) HandleCall(r Term, from From) Term {
 		return fmt.Errorf("%s: unexpected call: %#v", gs.Self(), r)
 	}
 
-	return GsCallReplyOk
+	return gs.CallReplyOk()
 }
 
 func (gs *envGs) HandleInfo(r Term) Term {
@@ -248,7 +248,7 @@ func (gs *envGs) HandleInfo(r Term) Term {
 		gs.unregNameByRef(r.MonitorRef)
 	}
 
-	return GsNoReply
+	return gs.NoReply()
 }
 
 //

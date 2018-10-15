@@ -17,15 +17,6 @@ type Env struct {
 	syncMsgPool   sync.Pool
 	sysMsgPool    sync.Pool
 	replyChanPool sync.Pool
-
-	initTimeoutPool sync.Pool
-
-	callReplyPool        sync.Pool
-	callReplyTimeoutPool sync.Pool
-	callStopPool         sync.Pool
-
-	noReplyTimeoutPool sync.Pool
-	stopPool           sync.Pool
 }
 
 // ---------------------------------------------------------------------------
@@ -57,37 +48,6 @@ func NewEnv() *Env {
 	e.replyChanPool = sync.Pool{
 		New: func() interface{} {
 			return make(chan Term, 1)
-		},
-	}
-
-	e.initTimeoutPool = sync.Pool{
-		New: func() interface{} {
-			return &GsInitTimeout{}
-		},
-	}
-	e.callReplyPool = sync.Pool{
-		New: func() interface{} {
-			return &GsCallReply{}
-		},
-	}
-	e.callReplyTimeoutPool = sync.Pool{
-		New: func() interface{} {
-			return &GsCallReplyTimeout{}
-		},
-	}
-	e.callStopPool = sync.Pool{
-		New: func() interface{} {
-			return &GsCallStop{}
-		},
-	}
-	e.noReplyTimeoutPool = sync.Pool{
-		New: func() interface{} {
-			return &GsNoReplyTimeout{}
-		},
-	}
-	e.stopPool = sync.Pool{
-		New: func() interface{} {
-			return &GsStop{}
 		},
 	}
 
@@ -123,54 +83,6 @@ func (e *Env) getReplyChan() chan Term {
 
 func (e *Env) putReplyChan(c chan Term) {
 	e.replyChanPool.Put(c)
-}
-
-func (e *Env) getInitTimeout() *GsInitTimeout {
-	return e.initTimeoutPool.Get().(*GsInitTimeout)
-}
-
-func (e *Env) putInitTimeout(r *GsInitTimeout) {
-	e.initTimeoutPool.Put(r)
-}
-
-func (e *Env) getCallReply() *GsCallReply {
-	return e.callReplyPool.Get().(*GsCallReply)
-}
-
-func (e *Env) putCallReply(r *GsCallReply) {
-	e.callReplyPool.Put(r)
-}
-
-func (e *Env) getCallReplyTimeout() *GsCallReplyTimeout {
-	return e.callReplyTimeoutPool.Get().(*GsCallReplyTimeout)
-}
-
-func (e *Env) putCallReplyTimeout(r *GsCallReplyTimeout) {
-	e.callReplyTimeoutPool.Put(r)
-}
-
-func (e *Env) getCallStop() *GsCallStop {
-	return e.callStopPool.Get().(*GsCallStop)
-}
-
-func (e *Env) putCallStop(r *GsCallStop) {
-	e.callStopPool.Put(r)
-}
-
-func (e *Env) getNoReplyTimeout() *GsNoReplyTimeout {
-	return e.noReplyTimeoutPool.Get().(*GsNoReplyTimeout)
-}
-
-func (e *Env) putNoReplyTimeout(r *GsNoReplyTimeout) {
-	e.noReplyTimeoutPool.Put(r)
-}
-
-func (e *Env) getStop() *GsStop {
-	return e.stopPool.Get().(*GsStop)
-}
-
-func (e *Env) putStop(r *GsStop) {
-	e.stopPool.Put(r)
 }
 
 //

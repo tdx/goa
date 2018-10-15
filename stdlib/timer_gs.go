@@ -18,10 +18,11 @@ var (
 //
 func TimerServerStart() (err error) {
 
-	opts := NewSpawnOpts().
-		WithName("timer_gs").
-		WithSpawnOrLocate()
-	timerPid, err = GenServerStart(new(tgs), opts)
+	timerPid, err = GenServerStart(
+		new(tgs),
+		NewSpawnOpts().
+			WithName("timer_gs").
+			WithSpawnOrLocate())
 
 	return err
 }
@@ -37,6 +38,7 @@ func TimerSendAfter(timeMs uint32, pid *Pid, msg Term) (Term, error) {
 
 	timeout := time.Duration(timeMs) * time.Millisecond
 	r := &timerAfterReq{timeout, &timerArgs{pid, msg}, time.Now()}
+
 	tref, err := timerPid.Call(r)
 	if err != nil {
 		return nil, err
@@ -56,6 +58,7 @@ func TimerSendInterval(timeMs uint32, pid *Pid, msg Term) (Term, error) {
 
 	timeout := time.Duration(timeMs) * time.Millisecond
 	r := &timerIntervalReq{timeout, &timerArgs{pid, msg}, time.Now(), timeMs}
+
 	tref, err := timerPid.Call(r)
 	if err != nil {
 		return nil, err
@@ -70,6 +73,7 @@ func TimerSendInterval(timeMs uint32, pid *Pid, msg Term) (Term, error) {
 func TimerCancel(tref Term) error {
 
 	_, err := timerPid.Call(tref)
+
 	return err
 }
 
@@ -84,7 +88,7 @@ func (gs *tgs) Init(args ...Term) Term {
 	gs.timerTab = NewOrderedSetWith(cmpTimerRef)
 	gs.intervalTab = NewSet()
 
-	return GsInitOk
+	return gs.InitOk()
 }
 
 func (gs *tgs) HandleCall(req Term, from From) Term {

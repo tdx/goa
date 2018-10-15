@@ -22,6 +22,10 @@ type GenServerSys struct {
 
 	initChan   chan error
 	callbackGs GenServer
+	//
+	reply   Term
+	timeout time.Duration
+	reason  string
 }
 
 //
@@ -46,28 +50,28 @@ func (gs *GenServerSys) InitAck() error {
 // Init initializes process state using arbitrary arguments
 //
 func (gs *GenServerSys) Init(args ...Term) Term {
-	return GsInitOk
+	return gsInitOk
 }
 
 //
 // HandleCall handles incoming messages from `pid.Call(data)`
 //
 func (gs *GenServerSys) HandleCall(req Term, from From) Term {
-	return GsCallReplyOk
+	return gsCallReplyOk
 }
 
 //
 // HandleCast handles incoming messages from `pid.Cast(data)`
 //
 func (gs *GenServerSys) HandleCast(req Term) Term {
-	return GsNoReply
+	return gsNoReply
 }
 
 //
 // HandleInfo handles timeouts and system messages
 //
 func (gs *GenServerSys) HandleInfo(req Term) Term {
-	return GsNoReply
+	return gsNoReply
 }
 
 //
@@ -92,64 +96,90 @@ func (gs *GenServerSys) setCallback(gp GenServer) {
 //
 
 //
+// InitOk makes gsInitOk reply
+//
+func (gs *GenServerSys) InitOk() Term {
+
+	return gsInitOk
+}
+
+//
 // InitTimeout makes InitTimeout reply
 //
-func (gs *GenServerSys) InitTimeout(timeout time.Duration) *GsInitTimeout {
+func (gs *GenServerSys) InitTimeout(timeout time.Duration) Term {
 
-	r := gs.Self().env.getInitTimeout()
-	r.Timeout = timeout
-	return r
+	gs.timeout = timeout
+
+	return gsInitTimeout
 }
 
 //
 // CallReply makes CallReply reply
 //
-func (gs *GenServerSys) CallReply(reply Term) *GsCallReply {
-	r := gs.Self().env.getCallReply()
-	r.Reply = reply
-	return r
+func (gs *GenServerSys) CallReply(reply Term) Term {
+
+	gs.reply = reply
+
+	return gsCallReply
+}
+
+//
+// CallReplyOk makes gsCallReplyOk reply
+//
+func (gs *GenServerSys) CallReplyOk() Term {
+
+	return gsCallReplyOk
 }
 
 //
 // CallReplyTimeout makes CallReplyTimeout reply
 //
 func (gs *GenServerSys) CallReplyTimeout(
-	reply Term, timeout time.Duration) *GsCallReplyTimeout {
+	reply Term, timeout time.Duration) Term {
 
-	r := gs.Self().env.getCallReplyTimeout()
-	r.Reply = reply
-	r.Timeout = timeout
-	return r
+	gs.reply = reply
+	gs.timeout = timeout
+
+	return gsCallReplyTimeout
 }
 
 //
 // CallStop makes CallStop reply
 //
-func (gs *GenServerSys) CallStop(reason string, reply Term) *GsCallStop {
-	r := gs.Self().env.getCallStop()
-	r.Reason = reason
-	r.Reply = reply
-	return r
+func (gs *GenServerSys) CallStop(reason string, reply Term) Term {
+
+	gs.reason = reason
+	gs.reply = reply
+
+	return gsCallStop
 }
 
 //
 // Stop makes Stop reply
 //
-func (gs *GenServerSys) Stop(reason string) *GsStop {
-	r := gs.Self().env.getStop()
-	r.Reason = reason
-	return r
+func (gs *GenServerSys) Stop(reason string) Term {
+
+	gs.reason = reason
+
+	return gsStop
+}
+
+//
+// NoReply makes gsNoReply reply
+//
+func (gs *GenServerSys) NoReply() Term {
+
+	return gsNoReply
 }
 
 //
 // NoReplyTimeout makes NoReplyTimeout reply
 //
-func (gs *GenServerSys) NoReplyTimeout(
-	timeout time.Duration) *GsNoReplyTimeout {
+func (gs *GenServerSys) NoReplyTimeout(timeout time.Duration) Term {
 
-	r := gs.Self().env.getNoReplyTimeout()
-	r.Timeout = timeout
-	return r
+	gs.timeout = timeout
+
+	return gsNoReplyTimeout
 }
 
 //
@@ -252,29 +282,33 @@ func (gs *GenServerSys) doInit(
 
 	TraceCall(gs.Tracer(), gs.Self(), traceFuncDoInit, args)
 	ts := time.Now()
+
 	result := gs.callbackGs.Init(args...)
+
 	TraceCallResult(gs.Tracer(), gs.Self(), &ts, traceFuncDoInit, args, result)
 
-	switch result := result.(type) {
+	// switch result := result.(type) {
+	switch result {
 
 	case gsInitOk:
 		return
 
-	case *GsInitTimeout:
-		if result.Timeout > 0 {
-			timeout = time.After(result.Timeout)
+	case gsInitTimeout:
+		if gs.timeout > 0 {
+			timeout = time.After(gs.timeout)
 		}
-		gs.Self().env.putInitTimeout(result)
 
-	case *GsStop:
-		err = errors.New(result.Reason)
-		gs.Self().env.putStop(result)
-
-	case error:
-		err = result
+	case gsStop:
+		err = errors.New(gs.reason)
 
 	default:
-		err = fmt.Errorf("Init bad reply: %#v", result)
+
+		switch result := result.(type) {
+		case error:
+			err = result
+		default:
+			err = fmt.Errorf("Init bad reply: %#v", result)
+		}
 	}
 
 	return
@@ -315,42 +349,42 @@ func (gs *GenServerSys) doCall(
 
 	inCall = false
 
-	switch result := result.(type) {
+	switch result {
 
-	case *GsCallReply:
-		replyChan <- result.Reply
-		gs.Self().env.putCallReply(result)
+	case gsCallReply:
+		// fmt.Printf("call: %#v, %T, %v\n", r, r, r == GsCallReply)
+		replyChan <- gs.reply
 
 	case gsCallReplyOk:
 		replyChan <- replyOk
 
-	case *GsCallReplyTimeout:
-		replyChan <- result.Reply
-		if result.Timeout > 0 {
-			timeout = time.After(result.Timeout)
+	case gsCallReplyTimeout:
+		replyChan <- gs.reply
+		if gs.timeout > 0 {
+			timeout = time.After(gs.timeout)
+			gs.timeout = 0
 		}
-		gs.Self().env.putCallReplyTimeout(result)
 
 	case gsNoReply:
 		return
 
-	case *GsNoReplyTimeout:
-		if result.Timeout > 0 {
-			timeout = time.After(result.Timeout)
+	case gsNoReplyTimeout:
+		if gs.timeout > 0 {
+			timeout = time.After(gs.timeout)
 		}
-		gs.Self().env.putNoReplyTimeout(result)
 
-	case *GsCallStop:
-		replyChan <- result.Reply
-		err = errors.New(result.Reason)
-		gs.Self().env.putCallStop(result)
-
-	case error:
-		replyChan <- result
-		err = result
+	case gsCallStop:
+		replyChan <- gs.reply
+		err = errors.New(gs.reason)
 
 	default:
-		err = fmt.Errorf("HandleCall bad reply: %#v", result)
+		switch result := result.(type) {
+		case error:
+			err = result
+		default:
+			err = fmt.Errorf("HandleCall bad reply: %#v", result)
+		}
+
 		replyChan <- err
 	}
 
@@ -398,26 +432,27 @@ func (gs *GenServerSys) doAsyncMsg(
 
 	TraceCallResult(gs.Tracer(), gs.Self(), &ts, tag, req, result)
 
-	switch result := result.(type) {
+	switch result {
 
 	case gsNoReply:
 		return
 
-	case *GsNoReplyTimeout:
-		if result.Timeout > 0 {
-			timeout = time.After(result.Timeout)
+	case gsNoReplyTimeout:
+		if gs.timeout > 0 {
+			timeout = time.After(gs.timeout)
 		}
-		gs.Self().env.putNoReplyTimeout(result)
 
-	case *GsStop:
-		err = errors.New(result.Reason)
-		gs.Self().env.putStop(result)
-
-	case error:
-		err = result
+	case gsStop:
+		err = errors.New(gs.reason)
 
 	default:
-		err = fmt.Errorf("%s bad reply: %#v", tag, result)
+
+		switch result := result.(type) {
+		case error:
+			err = result
+		default:
+			err = fmt.Errorf("%s bad reply: %#v", tag, result)
+		}
 	}
 
 	return

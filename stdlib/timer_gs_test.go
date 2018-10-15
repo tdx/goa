@@ -187,7 +187,7 @@ func (gs *ts2) Init(args ...Term) Term {
 		}
 	}
 
-	return GsInitOk
+	return gs.InitOk()
 }
 
 func (gs *ts2) HandleCall(req Term, from From) Term {
@@ -218,7 +218,7 @@ func (gs *ts2) HandleCall(req Term, from From) Term {
 		}
 	}
 
-	return GsCallReplyOk
+	return gs.CallReplyOk()
 }
 
 func (gs *ts2) HandleInfo(req Term) Term {
@@ -228,5 +228,5 @@ func (gs *ts2) HandleInfo(req Term) Term {
 		fmt.Println("info:", req.msg, time.Now().Sub(req.started))
 	}
 
-	return GsNoReply
+	return gs.NoReply()
 }
