@@ -65,9 +65,9 @@ func (pid *Pid) send(ct callType, data Term) (err error) {
 		}
 	}()
 
-	// if err = pid.Alive(); err != nil {
-	// 	return
-	// }
+	if err = pid.Alive(); err != nil {
+		return
+	}
 
 	switch ct {
 

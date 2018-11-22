@@ -67,7 +67,7 @@ func (pid *Pid) Equal(pid2 *Pid) bool {
 }
 
 //
-// Alive verifies that the process is not completed
+// Alive verifies that the process is alive
 //
 func (pid *Pid) Alive() error {
 	if pid == nil {
