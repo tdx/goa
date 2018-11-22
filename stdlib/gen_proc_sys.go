@@ -84,9 +84,8 @@ func (gps *GenProcSys) Tracer() Tracer {
 //
 func (gps *GenProcSys) HandleSysMsg(msg Term) (err error) {
 
-	TraceCall(gps.Tracer(), gps.Self(), traceFuncHSM, msg)
-	ts := time.Now()
-	defer TraceCallResult(gps.Tracer(), gps.Self(), &ts, traceFuncHSM, msg, err)
+	ts := TraceCall(gps.Tracer(), gps.Self(), traceFuncHSM, msg)
+	defer TraceCallResult(gps.Tracer(), gps.Self(), ts, traceFuncHSM, msg, err)
 
 	switch r := msg.(type) {
 	case *SysReq:

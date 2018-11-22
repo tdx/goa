@@ -26,14 +26,15 @@ type CallResult struct {
 //
 // TraceCall sends event to tracer as message of type *Call
 //
-func TraceCall(t Tracer, pid *Pid, tag string, arg Term) {
+func TraceCall(t Tracer, pid *Pid, tag string, arg Term) *time.Time {
 
 	if t == nil {
-		return
+		return nil
 	}
 
 	now := time.Now()
 	t.Event(&Call{pid, &now, tag, arg})
+	return &now
 }
 
 //

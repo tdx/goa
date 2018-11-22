@@ -280,12 +280,11 @@ func (gs *GenServerSys) doInit(
 		}
 	}()
 
-	TraceCall(gs.Tracer(), gs.Self(), traceFuncDoInit, args)
-	ts := time.Now()
+	ts := TraceCall(gs.Tracer(), gs.Self(), traceFuncDoInit, args)
 
 	result := gs.callbackGs.Init(args...)
 
-	TraceCallResult(gs.Tracer(), gs.Self(), &ts, traceFuncDoInit, args, result)
+	TraceCallResult(gs.Tracer(), gs.Self(), ts, traceFuncDoInit, args, result)
 
 	// switch result := result.(type) {
 	switch result {
@@ -329,8 +328,7 @@ func (gs *GenServerSys) doCall(
 				replyChan <- err
 			}
 
-			TraceCall(
-				gs.Tracer(), gs.Self(), "HandleCall crashed", err)
+			TraceCall(gs.Tracer(), gs.Self(), "HandleCall crashed", err)
 		}
 
 		if err != nil {
@@ -340,12 +338,11 @@ func (gs *GenServerSys) doCall(
 
 	inCall = true
 
-	TraceCall(gs.Tracer(), gs.Self(), traceFuncDoCall, req)
-	ts := time.Now()
+	ts := TraceCall(gs.Tracer(), gs.Self(), traceFuncDoCall, req)
 
 	result := gs.callbackGs.HandleCall(req, replyChan)
 
-	TraceCallResult(gs.Tracer(), gs.Self(), &ts, traceFuncDoCall, req, result)
+	TraceCallResult(gs.Tracer(), gs.Self(), ts, traceFuncDoCall, req, result)
 
 	inCall = false
 
@@ -425,12 +422,11 @@ func (gs *GenServerSys) doAsyncMsg(
 		}
 	}()
 
-	TraceCall(gs.Tracer(), gs.Self(), tag, req)
-	ts := time.Now()
+	ts := TraceCall(gs.Tracer(), gs.Self(), tag, req)
 
 	result := f(req)
 
-	TraceCallResult(gs.Tracer(), gs.Self(), &ts, tag, req, result)
+	TraceCallResult(gs.Tracer(), gs.Self(), ts, tag, req, result)
 
 	switch result {
 
@@ -466,10 +462,9 @@ func (gs *GenServerSys) doTerminate(reason string) {
 		}
 	}()
 
-	TraceCall(gs.Tracer(), gs.Self(), traceFuncTerminate, reason)
-	ts := time.Now()
+	ts := TraceCall(gs.Tracer(), gs.Self(), traceFuncTerminate, reason)
 
 	gs.callbackGs.Terminate(reason)
 
-	TraceCallResult(gs.Tracer(), gs.Self(), &ts, traceFuncTerminate, reason, "")
+	TraceCallResult(gs.Tracer(), gs.Self(), ts, traceFuncTerminate, reason, "")
 }
