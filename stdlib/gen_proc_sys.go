@@ -296,7 +296,7 @@ func (gps *GenProcSys) Run(gp GenProc, opts *SpawnOpts, args ...Term) {
 			trace := make([]byte, 512)
 			_ = runtime.Stack(trace, true)
 
-			fmt.Printf("%s %s/gp: crashed with reaason %s: %s\n",
+			fmt.Printf("%s %s/gp: crashed with reason %s: %s\n",
 				time.Now().Truncate(time.Microsecond), gp.Self(), exitReason,
 				trace)
 

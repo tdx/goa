@@ -3,6 +3,7 @@ package stdlib
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 )
 
@@ -269,11 +270,16 @@ func (gs *GenServerSys) doInit(
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
-			gs.initChan <- err
+
+			trace := make([]byte, 512)
+			_ = runtime.Stack(trace, true)
+
+			fmt.Printf("%s %s: crashed with reason %s: %s\n",
+				time.Now().Truncate(time.Microsecond), gs.Self(), err, trace)
+
 			TraceCall(gs.Tracer(), gs.Self(), "Init crashed", err)
-		} else {
-			gs.initChan <- err
 		}
+		gs.initChan <- err
 
 		if err != nil {
 			timeout = nil
@@ -286,7 +292,6 @@ func (gs *GenServerSys) doInit(
 
 	TraceCallResult(gs.Tracer(), gs.Self(), ts, traceFuncDoInit, args, result)
 
-	// switch result := result.(type) {
 	switch result {
 
 	case gsInitOk:
@@ -328,6 +333,12 @@ func (gs *GenServerSys) doCall(
 				replyChan <- err
 			}
 
+			trace := make([]byte, 512)
+			_ = runtime.Stack(trace, true)
+
+			fmt.Printf("%s %s: crashed with reason %s: %s\n",
+				time.Now().Truncate(time.Microsecond), gs.Self(), err, trace)
+
 			TraceCall(gs.Tracer(), gs.Self(), "HandleCall crashed", err)
 		}
 
@@ -349,7 +360,6 @@ func (gs *GenServerSys) doCall(
 	switch result {
 
 	case gsCallReply:
-		// fmt.Printf("call: %#v, %T, %v\n", r, r, r == GsCallReply)
 		replyChan <- gs.reply
 
 	case gsCallReplyOk:
@@ -368,6 +378,7 @@ func (gs *GenServerSys) doCall(
 	case gsNoReplyTimeout:
 		if gs.timeout > 0 {
 			timeout = time.After(gs.timeout)
+			gs.timeout = 0
 		}
 
 	case gsCallStop:
@@ -414,6 +425,13 @@ func (gs *GenServerSys) doAsyncMsg(
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
+
+			trace := make([]byte, 512)
+			_ = runtime.Stack(trace, true)
+
+			fmt.Printf("%s %s: crashed with reason %s: %s\n",
+				time.Now().Truncate(time.Microsecond), gs.Self(), err, trace)
+
 			TraceCall(gs.Tracer(), gs.Self(), tag+" crashed", err)
 		}
 
@@ -436,13 +454,13 @@ func (gs *GenServerSys) doAsyncMsg(
 	case gsNoReplyTimeout:
 		if gs.timeout > 0 {
 			timeout = time.After(gs.timeout)
+			gs.timeout = 0
 		}
 
 	case gsStop:
 		err = errors.New(gs.reason)
 
 	default:
-
 		switch result := result.(type) {
 		case error:
 			err = result
@@ -458,6 +476,13 @@ func (gs *GenServerSys) doTerminate(reason string) {
 
 	defer func() {
 		if r := recover(); r != nil {
+
+			trace := make([]byte, 512)
+			_ = runtime.Stack(trace, true)
+
+			fmt.Printf("%s %s: crashed with reason %v: %s\n",
+				time.Now().Truncate(time.Microsecond), gs.Self(), r, trace)
+
 			TraceCall(gs.Tracer(), gs.Self(), traceFuncTerminate+" crashed", r)
 		}
 	}()
