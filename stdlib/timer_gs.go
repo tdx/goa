@@ -6,6 +6,7 @@ package stdlib
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -147,6 +148,10 @@ func (gs *tgs) HandleInfo(req Term) Term {
 	}
 
 	return gs.NoReplyTimeout(gs.nextTimeout())
+}
+
+func (gs *tgs) Terminate(reason string) {
+	fmt.Println(gs.Self().String(), "timer_gs: terminated:", reason)
 }
 
 // ---------------------------------------------------------------------------

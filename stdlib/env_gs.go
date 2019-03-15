@@ -251,6 +251,10 @@ func (gs *envGs) HandleInfo(r Term) Term {
 	return gs.NoReply()
 }
 
+func (gs *envGs) Terminate(reason string) {
+	fmt.Println(gs.Self().String(), "env_gs: terminated:", reason)
+}
+
 //
 // Locals
 //
