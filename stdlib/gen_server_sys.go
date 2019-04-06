@@ -271,7 +271,7 @@ func (gs *GenServerSys) doInit(
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
 
-			trace := make([]byte, 512)
+			trace := make([]byte, 1024)
 			_ = runtime.Stack(trace, true)
 
 			fmt.Printf("%s %s: crashed with reason %s: %s\n",
@@ -333,7 +333,7 @@ func (gs *GenServerSys) doCall(
 				replyChan <- err
 			}
 
-			trace := make([]byte, 512)
+			trace := make([]byte, 1024)
 			_ = runtime.Stack(trace, true)
 
 			fmt.Printf("%s %s: crashed with reason %s: %s\n",
@@ -426,7 +426,7 @@ func (gs *GenServerSys) doAsyncMsg(
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
 
-			trace := make([]byte, 512)
+			trace := make([]byte, 1024)
 			_ = runtime.Stack(trace, true)
 
 			fmt.Printf("%s %s: crashed with reason %s: %s\n",
@@ -477,7 +477,7 @@ func (gs *GenServerSys) doTerminate(reason string) {
 	defer func() {
 		if r := recover(); r != nil {
 
-			trace := make([]byte, 512)
+			trace := make([]byte, 1024)
 			_ = runtime.Stack(trace, true)
 
 			fmt.Printf("%s %s: crashed with reason %v: %s\n",
