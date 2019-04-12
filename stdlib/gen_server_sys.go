@@ -193,6 +193,15 @@ func (gs *GenServerSys) GenProcLoop(args ...Term) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("%v", r)
+
+			trace := make([]byte, 4096)
+			n := runtime.Stack(trace, false)
+
+			fmt.Println(time.Now().Truncate(time.Microsecond), gs.Self(),
+				"crashed with reason:", r, n, "bytes stack:",
+				string(trace[:n]))
+
+			TraceCall(gs.Tracer(), gs.Self(), "GenServerSysLoop crashed", err)
 		}
 
 		gs.doTerminate(err.Error())
@@ -272,10 +281,11 @@ func (gs *GenServerSys) doInit(
 			err = fmt.Errorf("%v", r)
 
 			trace := make([]byte, 4096)
-			_ = runtime.Stack(trace, true)
+			n := runtime.Stack(trace, false)
 
-			fmt.Printf("%s %s: crashed with reason %s: %s\n",
-				time.Now().Truncate(time.Microsecond), gs.Self(), err, trace)
+			fmt.Println(time.Now().Truncate(time.Microsecond), gs.Self(),
+				"crashed with reason:", r, n, "bytes stack:",
+				string(trace[:n]))
 
 			TraceCall(gs.Tracer(), gs.Self(), "Init crashed", err)
 		}
@@ -334,10 +344,11 @@ func (gs *GenServerSys) doCall(
 			}
 
 			trace := make([]byte, 4096)
-			_ = runtime.Stack(trace, true)
+			n := runtime.Stack(trace, false)
 
-			fmt.Printf("%s %s: crashed with reason %s: %s\n",
-				time.Now().Truncate(time.Microsecond), gs.Self(), err, trace)
+			fmt.Println(time.Now().Truncate(time.Microsecond), gs.Self(),
+				"crashed with reason:", r, n, "bytes stack:",
+				string(trace[:n]))
 
 			TraceCall(gs.Tracer(), gs.Self(), "HandleCall crashed", err)
 		}
@@ -427,10 +438,11 @@ func (gs *GenServerSys) doAsyncMsg(
 			err = fmt.Errorf("%v", r)
 
 			trace := make([]byte, 4096)
-			_ = runtime.Stack(trace, true)
+			n := runtime.Stack(trace, false)
 
-			fmt.Printf("%s %s: crashed with reason %s: %s\n",
-				time.Now().Truncate(time.Microsecond), gs.Self(), err, trace)
+			fmt.Println(time.Now().Truncate(time.Microsecond), gs.Self(),
+				"crashed with reason:", r, n, "bytes stack:",
+				string(trace[:n]))
 
 			TraceCall(gs.Tracer(), gs.Self(), tag+" crashed", err)
 		}
@@ -478,10 +490,11 @@ func (gs *GenServerSys) doTerminate(reason string) {
 		if r := recover(); r != nil {
 
 			trace := make([]byte, 4096)
-			_ = runtime.Stack(trace, true)
+			n := runtime.Stack(trace, false)
 
-			fmt.Printf("%s %s: crashed with reason %v: %s\n",
-				time.Now().Truncate(time.Microsecond), gs.Self(), r, trace)
+			fmt.Println(time.Now().Truncate(time.Microsecond), gs.Self(),
+				"crashed with reason:", r, n, "bytes stack:",
+				string(trace[:n]))
 
 			TraceCall(gs.Tracer(), gs.Self(), traceFuncTerminate+" crashed", r)
 		}
