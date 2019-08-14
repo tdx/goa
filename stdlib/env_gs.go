@@ -82,7 +82,10 @@ type envGs struct {
 // API
 //
 func mustNewEnvGs(e *Env) {
-	_, err := e.GenServerStart(&envGs{envUID: e.uid})
+	opts := NewSpawnOpts().
+		WithSysChannelSize(1024).
+		WithUsrChannelSize(1024)
+	_, err := e.GenServerStartOpts(&envGs{envUID: e.uid}, opts)
 	if err != nil {
 		panic(err)
 	}
