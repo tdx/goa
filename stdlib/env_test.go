@@ -2,9 +2,12 @@ package stdlib
 
 import (
 	// "fmt"
+	"fmt"
 	"testing"
 	"time"
 )
+
+var npid int
 
 func TestEnvDefault(t *testing.T) {
 	if env == nil {
@@ -35,6 +38,44 @@ func TestEnvSpawnEmptyPid(t *testing.T) {
 	var pid *Pid
 	if _, err := pid.SpawnLink(envTestFunc); !IsNilPidError(err) {
 		t.Fatalf("expected %s error, actual %s", NilPidError, err.Error())
+	}
+}
+
+func BenchmarkNewPid(b *testing.B) {
+
+	opts := NewSpawnOpts()
+
+	if _, _, err := env.newPid(opts); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if _, _, err := env.newPid(opts); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkNewPidWithName(b *testing.B) {
+
+	opts := NewSpawnOpts()
+
+	if _, _, err := env.newPid(opts); err != nil {
+		b.Fatal(err)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		opts = opts.WithName(fmt.Sprintf("gs%d", npid))
+		if _, _, err := env.newPid(opts); err != nil {
+			b.Fatal(err)
+		}
+		npid++
 	}
 }
 

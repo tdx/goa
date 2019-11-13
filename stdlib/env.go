@@ -12,7 +12,8 @@ import (
 //
 type Env struct {
 	uid uint32
-	gs  *Pid // GenServer for Env
+	gs  *Pid   // GenServer for Env
+	eGs *envGs // gs state to direct fast access
 
 	syncMsgPool   sync.Pool
 	sysMsgPool    sync.Pool
@@ -85,8 +86,6 @@ func (e *Env) putReplyChan(c chan Term) {
 	e.replyChanPool.Put(c)
 }
 
-//
-// Returns: pid, isNewPid, error
 //
 func (e *Env) spawnObjOpts(
 	gp GenProc, opts *SpawnOpts, args ...Term) (*Pid, error) {

@@ -255,21 +255,24 @@ func (gps *GenProcSys) processLinks() []*Pid {
 func (gps *GenProcSys) MonitorProcessPid(pid *Pid) Ref {
 
 	ref := gps.pid.env.MakeRef()
-	gps.monitorProcessPid(ref, pid)
-
-	return ref
-}
-
-func (gps *GenProcSys) monitorProcessPid(ref Ref, pid *Pid) {
-	err := pid.SendSys(&MonitorPidReq{ref, gps.pid})
-	if err == nil {
-		gps.monitorByMe(pid, ref)
-	} else {
+	if err := gps.monitorProcessPid(ref, pid); err != nil {
 		//
 		// nothing to handle in sys level -> send to usr level
 		//
 		_ = gps.pid.Send(&MonitorDownReq{ref, pid, err.Error()})
 	}
+
+	return ref
+}
+
+func (gps *GenProcSys) monitorProcessPid(ref Ref, pid *Pid) error {
+
+	err := pid.SendSys(&MonitorPidReq{ref, gps.pid})
+	if err == nil {
+		gps.monitorByMe(pid, ref)
+	}
+
+	return err
 }
 
 //

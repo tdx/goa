@@ -2,52 +2,9 @@ package stdlib
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
 )
-
-//
-// Messages to registrator
-//
-type makePidReq struct {
-	opts   *SpawnOpts
-	retPid *Pid
-	newPid bool
-	err    error
-}
-
-type makeRefReq struct {
-	replyChan chan Ref
-}
-
-type regNameReq struct {
-	name Term
-	pid  *Pid
-}
-
-type unregNameReq struct {
-	name Term
-}
-
-type whereisReq struct {
-	prefix string
-	name   Term
-	pid    *Pid
-}
-
-type regPrefixNameReq struct {
-	prefix string
-	name   Term
-	pid    *Pid
-}
-
-type unregPrefixNameReq struct {
-	prefix string
-	name   Term
-}
-
-type whereareReq struct {
-	prefix string
-	regs   RegMap
-}
 
 //
 // RegMap is a map of registered process names
@@ -64,6 +21,9 @@ type refReg struct {
 
 type envGs struct {
 	GenServerSys
+
+	// mu guard all envGs fields
+	mu sync.RWMutex
 
 	envUID  uint32
 	nextPid uint64
@@ -82,90 +42,88 @@ type envGs struct {
 // API
 //
 func mustNewEnvGs(e *Env) {
-	opts := NewSpawnOpts().
-		WithSysChannelSize(1024).
-		WithUsrChannelSize(1024)
-	_, err := e.GenServerStartOpts(&envGs{envUID: e.uid}, opts)
+	eGs := &envGs{envUID: e.uid}
+	_, err := e.GenServerStart(eGs)
 	if err != nil {
 		panic(err)
 	}
+	e.eGs = eGs
 }
 
+//
 func (e *Env) makePid(opts *SpawnOpts) (*Pid, bool, error) {
 
-	r := &makePidReq{opts: opts}
-
-	if _, err := e.gs.Call(r); err != nil {
-		return nil, false, err
+	if opts == nil {
+		opts = NewSpawnOpts()
 	}
 
-	return r.retPid, r.newPid, r.err
+	e.eGs.mu.Lock()
+	defer e.eGs.mu.Unlock()
+
+	return e.eGs.regNewPid(opts)
 }
 
+//
 func (e *Env) makeRef() Ref {
 
-	replyChan := make(chan Ref, 1)
-
-	if err := e.gs.Send(&makeRefReq{replyChan: replyChan}); err != nil {
-		panic(err)
-	}
-
-	ref := <-replyChan
-
-	return ref
+	return e.eGs.newRef()
 }
 
-func (e *Env) regPidName(prefix string, name Term, pid *Pid) (err error) {
+//
+func (e *Env) regPidName(prefix string, name Term, pid *Pid) error {
 
 	if name == "" {
 		return NameEmptyError
 	}
 
+	e.eGs.mu.Lock()
+	defer e.eGs.mu.Unlock()
+
 	if prefix == "" {
-		_, err = e.gs.Call(&regNameReq{name, pid})
-	} else {
-		_, err = e.gs.Call(&regPrefixNameReq{prefix, name, pid})
-	}
-	if err != nil {
-		return err
+		if isNew, _ := e.eGs.regPidName(name, pid); isNew {
+			return nil
+		}
+		return AlreadyRegError
 	}
 
-	return nil
+	if isNew, _ := e.eGs.regPidPrefixName(prefix, name, pid); isNew {
+		return nil
+	}
+
+	return AlreadyRegError
 }
 
-func (e *Env) unregPidName(prefix string, name Term) (err error) {
+//
+func (e *Env) unregPidName(prefix string, name Term) error {
 
 	if name == "" {
 		return NameEmptyError
 	}
 
+	e.eGs.mu.Lock()
+	defer e.eGs.mu.Unlock()
+
 	if prefix == "" {
-		_, err = e.gs.Call(&unregNameReq{name})
-	} else {
-		_, err = e.gs.Call(&unregPrefixNameReq{prefix, name})
-	}
-	if err != nil {
-		return err
+		return e.eGs.unregPidName(name)
 	}
 
-	return nil
+	return e.eGs.unregPidPrefixName(prefix, name)
 }
 
-func (e *Env) whereis(name Term) (*Pid, error) {
+func (e *Env) whereis(name Term) (pid *Pid, err error) {
 	if name == "" {
 		return nil, NameEmptyError
 	}
 
-	r := &whereisReq{name: name}
-	_, err := e.gs.Call(r)
-	if err != nil {
-		return nil, err
-	}
+	e.eGs.mu.RLock()
+	pid, err = e.eGs.whereis("", name)
+	e.eGs.mu.RUnlock()
 
-	return r.pid, nil
+	return
 }
 
-func (e *Env) whereisPrefix(prefix string, name Term) (*Pid, error) {
+//
+func (e *Env) whereisPrefix(prefix string, name Term) (pid *Pid, err error) {
 	if name == "" {
 		return nil, NameEmptyError
 	}
@@ -174,27 +132,24 @@ func (e *Env) whereisPrefix(prefix string, name Term) (*Pid, error) {
 		return nil, PrefixEmptyError
 	}
 
-	r := &whereisReq{prefix: prefix, name: name}
-	_, err := e.gs.Call(r)
-	if err != nil {
-		return nil, err
-	}
+	e.eGs.mu.RLock()
+	pid, err = e.eGs.whereis(prefix, name)
+	e.eGs.mu.RUnlock()
 
-	return r.pid, nil
+	return
 }
 
+//
 func (e *Env) whereare(prefix string) (RegMap, error) {
 	if prefix == "" {
 		return nil, PrefixEmptyError
 	}
 
-	r := &whereareReq{prefix: prefix}
-	_, err := e.gs.Call(r)
-	if err != nil {
-		return nil, err
-	}
+	e.eGs.mu.RLock()
+	regs, err := e.eGs.whereare(prefix)
+	e.eGs.mu.RUnlock()
 
-	return r.regs, nil
+	return regs, err
 }
 
 // ----------------------------------------------------------------------------
@@ -208,44 +163,10 @@ func (gs *envGs) Init(args ...Term) Term {
 	return gs.InitOk()
 }
 
-func (gs *envGs) HandleCall(r Term, from From) Term {
-
-	switch r := r.(type) {
-
-	case *makePidReq:
-		gs.regNewPid(r)
-
-	case *regNameReq:
-		return gs.CallReply(gs.doRegPidNameReq(r))
-
-	case *unregNameReq:
-		return gs.CallReply(gs.unregPidName(r))
-
-	case *whereisReq:
-		return gs.CallReply(gs.whereis(r))
-
-	case *regPrefixNameReq:
-		return gs.CallReply(gs.doRegPidPrefixName(r))
-
-	case *unregPrefixNameReq:
-		return gs.CallReply(gs.unregPidPrefixName(r))
-
-	case *whereareReq:
-		return gs.CallReply(gs.whereare(r))
-
-	default:
-		return fmt.Errorf("%s: unexpected call: %#v", gs.Self(), r)
-	}
-
-	return gs.CallReplyOk()
-}
-
+//
 func (gs *envGs) HandleInfo(r Term) Term {
 
 	switch r := r.(type) {
-
-	case *makeRefReq:
-		gs.regNewRef(r)
 
 	case *MonitorDownReq:
 		gs.unregNameByRef(r.MonitorRef)
@@ -254,77 +175,61 @@ func (gs *envGs) HandleInfo(r Term) Term {
 	return gs.NoReply()
 }
 
+//
 func (gs *envGs) Terminate(reason string) {
-	fmt.Println(gs.Self().String(), "env_gs: terminated:", reason)
+	fmt.Println("env_gs", gs.Self().String(), "terminated:", reason)
 }
 
 //
 // Locals
 //
-func (gs *envGs) regNewPid(r *makePidReq) {
-
+func (gs *envGs) regNewPid(opts *SpawnOpts) (pid *Pid, isNewPid bool, err error) {
 	//
 	// spawn + register
 	//
-	if r.opts.Name != nil {
-
-		oldReg, oldPid := gs.isRegisteredPrefixName(r.opts.Prefix, r.opts.Name)
+	if opts.Name != nil {
+		oldReg, oldPid := gs.isRegisteredPrefixName(opts.Prefix, opts.Name)
 		if oldReg {
-			if r.opts.returnPidIfRegistered == true {
-				r.retPid = oldPid
+			if opts.returnPidIfRegistered == true {
+				pid = oldPid
 			} else {
-				r.retPid = nil
-				r.err = AlreadyRegError
+				pid = nil
+				err = AlreadyRegError
 			}
 			return
 		}
 	}
 
-	pid := newPid(
-		gs.nextPid+1, gs.Self().env, r.opts.UsrChanSize, r.opts.SysChanSize)
+	pid = newPid(
+		gs.nextPid+1, gs.Self().env, opts.UsrChanSize, opts.SysChanSize)
 
-	if r.opts.Name != nil {
-		if r.opts.Prefix == "" {
-			gs.regPidName(r.opts.Name, pid)
+	if opts.Name != nil {
+		if opts.Prefix == "" {
+			gs.regPidName(opts.Name, pid)
 		} else {
-			gs.regPidPrefixName(r.opts.Prefix, r.opts.Name, pid)
+			gs.regPidPrefixName(opts.Prefix, opts.Name, pid)
 		}
 	}
 
 	gs.nextPid++
 
-	r.newPid = true
-	r.retPid = pid
+	isNewPid = true
+	err = nil
+
+	return
 }
 
-func (gs *envGs) regNewRef(r *makeRefReq) {
-
-	r.replyChan <- gs.newRef()
-}
-
+//
 func (gs *envGs) newRef() Ref {
-	gs.ref++
-
-	ref := Ref{
+	return Ref{
 		envID: gs.envUID,
-		id:    gs.ref,
+		id:    atomic.AddUint64(&gs.ref, 1),
 	}
-
-	return ref
 }
 
 //
 // Reg name
 //
-func (gs *envGs) doRegPidNameReq(r *regNameReq) Term {
-
-	if ok, _ := gs.regPidName(r.name, r.pid); ok {
-		return true
-	}
-
-	return AlreadyRegError
-}
-
 func (gs *envGs) regPidName(name Term, pid *Pid) (bool, *Pid) {
 
 	if gs.regName == nil {
@@ -337,7 +242,6 @@ func (gs *envGs) regPidName(name Term, pid *Pid) (bool, *Pid) {
 	}
 
 	oldPid, ok := gs.regName[name]
-
 	if !ok {
 		gs.regName[name] = pid
 
@@ -353,26 +257,29 @@ func (gs *envGs) regPidName(name Term, pid *Pid) (bool, *Pid) {
 //
 // Returns BadArgError if name is not a registered name
 //
-func (gs *envGs) unregPidName(r *unregNameReq) Term {
+func (gs *envGs) unregPidName(name Term) error {
 
 	if gs.regName == nil {
 		return NotRegError
 	}
 
-	pid, ok := gs.regName[r.name]
+	pid, ok := gs.regName[name]
 	if !ok {
 		return NotRegError
 	}
 
-	delete(gs.regName, r.name)
+	delete(gs.regName, name)
 
-	gs.demonitorName(pid, "", r.name)
+	gs.demonitorName(pid, "", name)
 	gs.dumpRegs("unregPidName")
 
-	return true
+	return nil
 }
 
 func (gs *envGs) unregNameByRef(ref Ref) {
+
+	gs.mu.Lock()
+	defer gs.mu.Unlock()
 
 	if pid, ok := gs.regNameByRef[ref]; ok {
 
@@ -393,67 +300,56 @@ func (gs *envGs) unregNameByRef(ref Ref) {
 	gs.dumpRegs("unregNameByRef")
 }
 
-func (gs *envGs) whereis(r *whereisReq) Term {
+func (gs *envGs) whereis(prefix string, name Term) (*Pid, error) {
 
 	// find by name
-	if r.prefix == "" {
+	if prefix == "" {
 
 		if gs.regName == nil {
-			return NotRegError
+			return nil, NotRegError
 		}
 
-		if pid, ok := gs.regName[r.name]; ok {
-			r.pid = pid
-			return true
+		if pid, ok := gs.regName[name]; ok {
+			return pid, nil
 		}
 
-		return NotRegError
+		return nil, NotRegError
 	}
 
 	// find by prefix+name
 	if gs.regPrefix == nil {
-		return NotRegError
+		return nil, NotRegError
 	}
 
-	if pids, ok := gs.regPrefix[r.prefix]; ok {
-		if pid, pidOk := pids[r.name]; pidOk {
-			r.pid = pid
-			return true
+	if pids, ok := gs.regPrefix[prefix]; ok {
+		if pid, pidOk := pids[name]; pidOk {
+			return pid, nil
 		}
 	}
 
-	return NotRegError
+	return nil, NotRegError
 }
 
-func (gs *envGs) whereare(r *whereareReq) Term {
+//
+func (gs *envGs) whereare(prefix string) (RegMap, error) {
 	if gs.regPrefix == nil {
-		return NotRegError
+		return nil, NotRegError
 	}
 
-	if pids, ok := gs.regPrefix[r.prefix]; ok {
-		r.regs = make(RegMap)
+	if pids, ok := gs.regPrefix[prefix]; ok {
+		regs := make(RegMap)
 		for k, v := range pids {
-			r.regs[k] = v
+			regs[k] = v
 		}
-		return true
+		return regs, nil
 	}
 
-	return NotRegError
+	return nil, NotRegError
 }
 
 //
 // Reg prefix + name
 //
-func (gs *envGs) doRegPidPrefixName(r *regPrefixNameReq) Term {
-
-	if ok, _ := gs.regPidPrefixName(r.prefix, r.name, r.pid); ok {
-		return true
-	}
-
-	return AlreadyRegError
-
-}
-
 func (gs *envGs) regPidPrefixName(
 	prefix string, name Term, pid *Pid) (bool, *Pid) {
 
@@ -510,23 +406,23 @@ func (gs *envGs) isRegisteredPrefixName(prefix string, name Term) (bool, *Pid) {
 //
 // Returns BadArgError if name is not a registered name
 //
-func (gs *envGs) unregPidPrefixName(r *unregPrefixNameReq) Term {
+func (gs *envGs) unregPidPrefixName(prefix string, name Term) error {
 
 	if gs.regPrefix == nil {
 		return NotRegError
 	}
 
-	pid, ok := gs.regPrefix[r.prefix][r.name]
+	pid, ok := gs.regPrefix[prefix][name]
 	if !ok {
 		return NotRegError
 	}
 
-	delete(gs.regPrefix[r.prefix], r.name)
+	delete(gs.regPrefix[prefix], name)
 
-	gs.demonitorName(pid, r.prefix, r.name)
+	gs.demonitorName(pid, prefix, name)
 	gs.dumpRegs("unregPidPrefixName")
 
-	return true
+	return nil
 }
 
 //
@@ -537,7 +433,9 @@ func (gs *envGs) monitorPid(pid *Pid, prefix string, name Term) {
 	reg, ok := gs.regNameByPid[pid]
 	if !ok {
 		ref := gs.newRef()
-		gs.monitorProcessPid(ref, pid)
+		if err := gs.monitorProcessPid(ref, pid); err != nil {
+			return
+		}
 
 		gs.regNameByRef[ref] = pid
 
