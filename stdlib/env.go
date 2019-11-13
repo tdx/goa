@@ -134,19 +134,15 @@ func (e *Env) newPid(opts *SpawnOpts) (*Pid, bool, error) {
 		return e.makePid(opts)
 	}
 
-	e.gs = e.makeEnvPid()
+	e.gs = e.makeEnvPid(opts)
 
 	return e.gs, true, nil
 }
 
-func (e *Env) makeEnvPid() *Pid {
-	return e.makeEnvPidOpts(
-		NewSpawnOpts().
-			WithUsrChannelSize(1024).
-			WithSysChannelSize(512))
+func (e *Env) makeEnvPid(opts *SpawnOpts) *Pid {
+	return e.makeEnvPidOpts(opts)
 }
 
 func (e *Env) makeEnvPidOpts(opts *SpawnOpts) *Pid {
-
 	return newPid(0, e, opts.UsrChanSize, opts.SysChanSize)
 }
