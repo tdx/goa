@@ -55,7 +55,7 @@ func TestGenServerRegName(t *testing.T) {
 	//
 	// try with new pid
 	//
-	err = pid2.Register(regTestName)
+	err = pid2.Register(regTestName) // regTestname already registered to pid
 	if !IsAlreadyRegError(err) {
 		t.Fatalf("exprected '%s' error, actual '%s'", AlreadyRegError, err)
 	}
@@ -81,11 +81,11 @@ func TestGenServerRegName(t *testing.T) {
 	time.Sleep(time.Duration(300) * time.Millisecond)
 
 	//
-	// name is unregistered when process exits
+	// name <regTestName> is unregistered when process exits
 	//
 
 	//
-	// check name is available to register again
+	// check name <regTestName> is available to register again
 	//
 	pid, err = GenServerStart(new(rs))
 	if err != nil {
@@ -97,6 +97,8 @@ func TestGenServerRegName(t *testing.T) {
 	}
 	_ = pid.Stop()
 	_ = pid2.Stop()
+
+	time.Sleep(time.Duration(300) * time.Millisecond)
 }
 
 func TestGenServerRegUnregName(t *testing.T) {
