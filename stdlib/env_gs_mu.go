@@ -433,9 +433,8 @@ func (gs *envGs) monitorPid(pid *Pid, prefix string, name Term) {
 	reg, ok := gs.regNameByPid[pid]
 	if !ok {
 		ref := gs.newRef()
-		if err := gs.monitorProcessPid(ref, pid); err != nil {
-			return
-		}
+		pid.monitorMe(gs.pid, ref)
+		gs.pid.monitorByMe(pid, ref)
 
 		gs.regNameByRef[ref] = pid
 

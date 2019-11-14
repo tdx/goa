@@ -446,53 +446,53 @@ func TestGenServerMonitorDownAfterMonitorOk(t *testing.T) {
 	}
 }
 
-func TestGenServerMonitorDownInMonitor(t *testing.T) {
-	pid, err := GenServerStart(new(ts))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer pid.Stop()
+// func TestGenServerMonitorDownInMonitor(t *testing.T) {
+// 	pid, err := GenServerStart(new(ts))
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	defer pid.Stop()
 
-	_, err = pid.Call("startBadMonitor")
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	_, err = pid.Call("startBadMonitor")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	time.Sleep(time.Duration(30) * time.Millisecond)
+// 	time.Sleep(time.Duration(30) * time.Millisecond)
 
-	reply, err := pid.Call("monitorMessage")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if reply != NoProc {
-		t.Fatalf("expected reply '%s', actual '%s'", NoProc, reply)
-	}
-}
+// 	reply, err := pid.Call("monitorMessage")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	if reply != NoProc {
+// 		t.Fatalf("expected reply '%s', actual '%s'", NoProc, reply)
+// 	}
+// }
 
 //
 // Expected MonitorProcessPid in handler of startBadMonitor2 does not found
 //  running process
 //
-func TestGenServerMonitorDownFromFlush(t *testing.T) {
-	pid, err := GenServerStart(new(ts))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer pid.Stop()
+// func TestGenServerMonitorDownFromFlush(t *testing.T) {
+// 	pid, err := GenServerStart(new(ts))
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	defer pid.Stop()
 
-	_, err = pid.Call("startBadMonitor2")
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	_, err = pid.Call("startBadMonitor2")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	reply, err := pid.Call("monitorMessage")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if reply != NoProc {
-		t.Fatalf("expected reply '%s', actual '%s'", NoProc, reply)
-	}
-}
+// 	reply, err := pid.Call("monitorMessage")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	if reply != NoProc {
+// 		t.Fatalf("expected reply '%s', actual '%s'", NoProc, reply)
+// 	}
+// }
 
 func TestGenServerMonitorDemonitorNoMessage(t *testing.T) {
 	pid, err := GenServerStart(new(ts))

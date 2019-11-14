@@ -21,13 +21,11 @@ const (
 // GenProcSys is a default implementation of GenProc interface
 //
 type GenProcSys struct {
-	pid          *Pid
-	trapExit     bool
-	links        []*Pid
-	monitorsByMe map[Ref]*Pid
-	monitors     map[Ref]*Pid
-	genProc      GenProcFunc
-	tracer       Tracer
+	pid      *Pid
+	trapExit bool
+	links    []*Pid
+	genProc  GenProcFunc
+	tracer   Tracer
 }
 
 //
@@ -101,6 +99,9 @@ func (gps *GenProcSys) HandleSysMsg(msg Term) (err error) {
 func (gps *GenProcSys) handleAsyncMsg(msg Term) (err error) {
 	switch r := msg.(type) {
 
+	//
+	// Links
+	//
 	case *LinkPidReq:
 		gps.link(r.Pid)
 
@@ -117,17 +118,9 @@ func (gps *GenProcSys) handleAsyncMsg(msg Term) (err error) {
 	//
 	// Monitors
 	//
-	case *MonitorPidReq:
-
-		gps.monitorMe(r.PidFrom, r.MonitorRef)
-
-	case *DemonitorPidReq:
-
-		gps.demonitorMe(r.MonitorRef)
-
 	case *MonitorDownReq:
 
-		gps.demonitorByMe(r.MonitorRef)
+		gps.pid.demonitorByMe(r.MonitorRef)
 		_ = gps.pid.Send(r)
 
 	}
@@ -204,7 +197,6 @@ func (gps *GenProcSys) InitPrepare() {
 // InitAck used for reply to calles the result of the process initialization
 //
 func (gps *GenProcSys) InitAck() error {
-
 	return nil
 }
 
@@ -255,32 +247,18 @@ func (gps *GenProcSys) processLinks() []*Pid {
 func (gps *GenProcSys) MonitorProcessPid(pid *Pid) Ref {
 
 	ref := gps.pid.env.MakeRef()
-	if err := gps.monitorProcessPid(ref, pid); err != nil {
-		//
-		// nothing to handle in sys level -> send to usr level
-		//
-		_ = gps.pid.Send(&MonitorDownReq{ref, pid, err.Error()})
-	}
+	pid.monitorMe(gps.pid, ref)
+	gps.pid.monitorByMe(pid, ref)
 
 	return ref
-}
-
-func (gps *GenProcSys) monitorProcessPid(ref Ref, pid *Pid) error {
-
-	err := pid.SendSys(&MonitorPidReq{ref, gps.pid})
-	if err == nil {
-		gps.monitorByMe(pid, ref)
-	}
-
-	return err
 }
 
 //
 // DemonitorProcessPid removes the monitor for process identified by ref
 //
 func (gps *GenProcSys) DemonitorProcessPid(ref Ref) {
-	if pid := gps.demonitorByMe(ref); pid != nil {
-		_ = pid.SendSys(&DemonitorPidReq{ref})
+	if pid := gps.pid.demonitorByMe(ref); pid != nil {
+		pid.demonitorMe(ref)
 	}
 }
 
@@ -364,43 +342,6 @@ func (gps *GenProcSys) unlink(pid *Pid) bool {
 }
 
 //
-// Monitors
-//
-func (gps *GenProcSys) monitorMe(pid *Pid, ref Ref) {
-	if gps.monitors == nil {
-		gps.monitors = make(map[Ref]*Pid)
-	}
-	gps.monitors[ref] = pid
-}
-
-func (gps *GenProcSys) demonitorMe(ref Ref) {
-	if gps.monitors == nil {
-		return
-	}
-	delete(gps.monitors, ref)
-}
-
-func (gps *GenProcSys) monitorByMe(pid *Pid, ref Ref) {
-	if gps.monitorsByMe == nil {
-		gps.monitorsByMe = make(map[Ref]*Pid)
-	}
-	gps.monitorsByMe[ref] = pid
-}
-
-func (gps *GenProcSys) demonitorByMe(ref Ref) *Pid {
-	if gps.monitorsByMe == nil {
-		return nil
-	}
-
-	if pid, ok := gps.monitorsByMe[ref]; ok {
-		delete(gps.monitorsByMe, ref)
-		return pid
-	}
-
-	return nil
-}
-
-//
 func (gps *GenProcSys) onStop(reason string) {
 
 	//
@@ -411,14 +352,7 @@ func (gps *GenProcSys) onStop(reason string) {
 	}
 	gps.links = nil
 
-	//
-	// send MonitorDownReq to processes who monitors me
-	//
-	for ref, pid := range gps.monitors {
-		gps.pid.monitorDown(pid, ref, reason)
-	}
-	gps.monitors = nil
-	gps.monitorsByMe = nil
+	gps.pid.onStop(reason)
 }
 
 //
@@ -456,9 +390,6 @@ func (gps *GenProcSys) flushMessages(pid *Pid) {
 
 			case *LinkPidReq:
 				_ = gps.pid.exitReason(r.Pid, NoProc, true)
-
-			case *MonitorPidReq:
-				gps.pid.monitorDown(r.PidFrom, r.MonitorRef, NoProc)
 
 			}
 

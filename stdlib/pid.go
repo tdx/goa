@@ -2,11 +2,12 @@ package stdlib
 
 import (
 	"fmt"
+	"sync"
 )
 
 //
 // Pid encapsulates process identificator and
-// channels to communicate to process
+// channels to communicate with process
 //
 type Pid struct {
 	id  uint64
@@ -15,6 +16,10 @@ type Pid struct {
 	usrChan  chan Term
 	sysChan  chan Term
 	exitChan chan bool
+
+	mu           sync.RWMutex
+	monitorsByMe map[Ref]*Pid
+	monitors     map[Ref]*Pid
 }
 
 func newPid(id uint64, e *Env, usrChanSize, sysChanSize int) *Pid {
