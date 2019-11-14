@@ -1,4 +1,4 @@
-module github.com/tdx/goa/stdlib
+module github.com/tdx/goa
 
 go 1.13
 
