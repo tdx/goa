@@ -109,20 +109,10 @@ func (gps *GenProcSys) handleAsyncMsg(msg Term) (err error) {
 		_ = gps.unlink(r.Pid)
 
 	case *ExitPidReq:
-
 		err = gps.doExitPid(r)
 
 	case *StopPidReq:
-
 		err = fmt.Errorf(r.Reason)
-	//
-	// Monitors
-	//
-	case *MonitorDownReq:
-
-		gps.pid.demonitorByMe(r.MonitorRef)
-		_ = gps.pid.Send(r)
-
 	}
 
 	return

@@ -44,14 +44,14 @@ func (pid *Pid) exitReason(pidTo *Pid, reason string, exit bool) error {
 }
 
 //
-// Stop sends sync exit request to self with reason ExitNormal
+// Stop sends sync exit request to pid with reason ExitNormal
 //
 func (pid *Pid) Stop() (err error) {
 	return pid.StopReason(ExitNormal)
 }
 
 //
-// StopReason sends sync exit request to self with specified reason
+// StopReason sends sync exit request to pid with specified reason
 //
 func (pid *Pid) StopReason(reason string) (err error) {
 	_, err = pid.CallSys(&StopPidReq{reason})
