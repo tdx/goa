@@ -75,13 +75,19 @@ func (pid *Pid) Equal(pid2 *Pid) bool {
 // Alive verifies that the process is alive
 //
 func (pid *Pid) Alive() error {
+	// fmt.Println(pid, "alive")
 	if pid == nil {
 		return NilPidError
 	}
+
+	// fmt.Println(pid, "alive: exitChan=", pid.exitChan)
+
 	select {
 	case <-pid.exitChan:
+		// fmt.Println(pid, "alive: case NoProcError")
 		return NoProcError
 	default:
+		// fmt.Println(pid, "alive: case default")
 		return nil
 	}
 }
