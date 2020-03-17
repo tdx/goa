@@ -183,7 +183,8 @@ func (gs *envGs) Terminate(reason string) {
 //
 // Locals
 //
-func (gs *envGs) regNewPid(opts *SpawnOpts) (pid *Pid, isNewPid bool, err error) {
+func (gs *envGs) regNewPid(
+	opts *SpawnOpts) (pid *Pid, isNewPid bool, err error) {
 	//
 	// spawn + register
 	//

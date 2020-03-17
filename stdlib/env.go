@@ -91,10 +91,10 @@ func (e *Env) spawnObjOpts(
 	gp GenProc, opts *SpawnOpts, args ...Term) (*Pid, error) {
 
 	if opts.UsrChanSize == 0 {
-		opts.UsrChanSize = 256
+		opts.UsrChanSize = 16
 	}
 	if opts.SysChanSize == 0 {
-		opts.SysChanSize = 128
+		opts.SysChanSize = 8
 	}
 
 	if opts.link && opts.linkPid == nil {
