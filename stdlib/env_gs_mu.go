@@ -43,6 +43,8 @@ type envGs struct {
 // API
 //
 func (e *envGs) Stat(w io.Writer) {
+	regPrefixLens := make(map[string]int)
+
 	e.mu.RLock()
 
 	var (
@@ -52,9 +54,16 @@ func (e *envGs) Stat(w io.Writer) {
 		regNameByPid = len(e.regNameByPid)
 	)
 
+	for k, v := range e.regPrefix {
+		regPrefixLens[k] = len(v)
+	}
+
 	e.mu.RUnlock()
 
 	fmt.Fprintln(w, "regPrefix:", regPrefixLen)
+	for k, v := range regPrefixLens {
+		fmt.Fprintln(w, "regPrefix:", k, v)
+	}
 	fmt.Fprintln(w, "regName:", regName)
 	fmt.Fprintln(w, "regNameByRef:", regNameByRef)
 	fmt.Fprintln(w, "regNameByPid:", regNameByPid)
