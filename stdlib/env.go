@@ -158,3 +158,108 @@ func (e *Env) makeEnvPid(opts *SpawnOpts) *Pid {
 func (e *Env) makeEnvPidOpts(opts *SpawnOpts) *Pid {
 	return newPid(0, e, opts.UsrChanSize, opts.SysChanSize)
 }
+
+//
+//
+//
+//
+func (e *Env) makePid(opts *SpawnOpts) (*Pid, bool, error) {
+
+	if opts == nil {
+		opts = NewSpawnOpts()
+	}
+
+	e.eGs.mu.Lock()
+	defer e.eGs.mu.Unlock()
+
+	return e.eGs.regNewPid(opts)
+}
+
+//
+func (e *Env) makeRef() Ref {
+
+	return e.eGs.newRef()
+}
+
+//
+func (e *Env) regPidName(prefix string, name Term, pid *Pid) error {
+
+	if name == "" {
+		return NameEmptyError
+	}
+
+	e.eGs.mu.Lock()
+	defer e.eGs.mu.Unlock()
+
+	if prefix == "" {
+		if isNew, _ := e.eGs.regPidName(name, pid); isNew {
+			return nil
+		}
+		return AlreadyRegError
+	}
+
+	if isNew, _ := e.eGs.regPidPrefixName(prefix, name, pid); isNew {
+		return nil
+	}
+
+	return AlreadyRegError
+}
+
+//
+func (e *Env) unregPidName(prefix string, name Term) error {
+
+	if name == "" {
+		return NameEmptyError
+	}
+
+	e.eGs.mu.Lock()
+	defer e.eGs.mu.Unlock()
+
+	if prefix == "" {
+		return e.eGs.unregPidName(name)
+	}
+
+	return e.eGs.unregPidPrefixName(prefix, name)
+}
+
+func (e *Env) whereis(name Term) (pid *Pid, err error) {
+	if name == "" {
+		return nil, NameEmptyError
+	}
+
+	e.eGs.mu.RLock()
+	pid, err = e.eGs.whereis("", name)
+	e.eGs.mu.RUnlock()
+
+	return
+}
+
+//
+func (e *Env) whereisPrefix(prefix string, name Term) (pid *Pid, err error) {
+	if name == "" {
+		return nil, NameEmptyError
+	}
+
+	if prefix == "" {
+		return nil, PrefixEmptyError
+	}
+
+	e.eGs.mu.RLock()
+	pid, err = e.eGs.whereis(prefix, name)
+	e.eGs.mu.RUnlock()
+
+	return
+}
+
+//
+func (e *Env) whereare(prefix string) (RegMap, error) {
+	if prefix == "" {
+		return nil, PrefixEmptyError
+	}
+
+	e.eGs.mu.RLock()
+	regs, err := e.eGs.whereare(prefix)
+	e.eGs.mu.RUnlock()
+
+	return regs, err
+}

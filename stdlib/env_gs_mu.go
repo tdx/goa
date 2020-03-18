@@ -42,23 +42,38 @@ type envGs struct {
 //
 // API
 //
-func (e *envGs) Stat(w io.Writer) {
+func mustNewEnvGs(e *Env) {
+	eGs := &envGs{envUID: e.uid}
+	opts := NewSpawnOpts().
+		WithSysChannelSize(512)
+	_, err := e.GenServerStartOpts(eGs, opts)
+	if err != nil {
+		panic(err)
+	}
+	e.eGs = eGs
+}
+
+func (gs *envGs) Stat(w io.Writer) {
+	gs.StatDump(w, 10)
+}
+
+func (gs *envGs) StatDump(w io.Writer, dumpTunnels int) {
 	regPrefixLens := make(map[string]int)
 
-	e.mu.RLock()
+	gs.mu.RLock()
 
 	var (
-		regPrefixLen = len(e.regPrefix)
-		regName      = len(e.regName)
-		regNameByRef = len(e.regNameByRef)
-		regNameByPid = len(e.regNameByPid)
+		regPrefixLen = len(gs.regPrefix)
+		regName      = len(gs.regName)
+		regNameByRef = len(gs.regNameByRef)
+		regNameByPid = len(gs.regNameByPid)
 	)
 
-	for k, v := range e.regPrefix {
+	for k, v := range gs.regPrefix {
 		regPrefixLens[k] = len(v)
 	}
 
-	e.mu.RUnlock()
+	gs.mu.RUnlock()
 
 	fmt.Fprintln(w, "regPrefix:", regPrefixLen)
 	for k, v := range regPrefixLens {
@@ -67,117 +82,23 @@ func (e *envGs) Stat(w io.Writer) {
 	fmt.Fprintln(w, "regName:", regName)
 	fmt.Fprintln(w, "regNameByRef:", regNameByRef)
 	fmt.Fprintln(w, "regNameByPid:", regNameByPid)
-}
 
-func mustNewEnvGs(e *Env) {
-	eGs := &envGs{envUID: e.uid}
-	_, err := e.GenServerStart(eGs)
-	if err != nil {
-		panic(err)
-	}
-	e.eGs = eGs
-}
+	if dumpTunnels > 0 {
+		gs.mu.RLock()
+		defer gs.mu.RUnlock()
 
-//
-func (e *Env) makePid(opts *SpawnOpts) (*Pid, bool, error) {
+		fmt.Fprintln(w, dumpTunnels, "tunnels:")
 
-	if opts == nil {
-		opts = NewSpawnOpts()
-	}
-
-	e.eGs.mu.Lock()
-	defer e.eGs.mu.Unlock()
-
-	return e.eGs.regNewPid(opts)
-}
-
-//
-func (e *Env) makeRef() Ref {
-
-	return e.eGs.newRef()
-}
-
-//
-func (e *Env) regPidName(prefix string, name Term, pid *Pid) error {
-
-	if name == "" {
-		return NameEmptyError
-	}
-
-	e.eGs.mu.Lock()
-	defer e.eGs.mu.Unlock()
-
-	if prefix == "" {
-		if isNew, _ := e.eGs.regPidName(name, pid); isNew {
-			return nil
+		tunnels := gs.regPrefix["tunnel"]
+		i := 0
+		for k := range tunnels {
+			fmt.Fprintln(w, k)
+			i++
+			if i > dumpTunnels {
+				break
+			}
 		}
-		return AlreadyRegError
 	}
-
-	if isNew, _ := e.eGs.regPidPrefixName(prefix, name, pid); isNew {
-		return nil
-	}
-
-	return AlreadyRegError
-}
-
-//
-func (e *Env) unregPidName(prefix string, name Term) error {
-
-	if name == "" {
-		return NameEmptyError
-	}
-
-	e.eGs.mu.Lock()
-	defer e.eGs.mu.Unlock()
-
-	if prefix == "" {
-		return e.eGs.unregPidName(name)
-	}
-
-	return e.eGs.unregPidPrefixName(prefix, name)
-}
-
-func (e *Env) whereis(name Term) (pid *Pid, err error) {
-	if name == "" {
-		return nil, NameEmptyError
-	}
-
-	e.eGs.mu.RLock()
-	pid, err = e.eGs.whereis("", name)
-	e.eGs.mu.RUnlock()
-
-	return
-}
-
-//
-func (e *Env) whereisPrefix(prefix string, name Term) (pid *Pid, err error) {
-	if name == "" {
-		return nil, NameEmptyError
-	}
-
-	if prefix == "" {
-		return nil, PrefixEmptyError
-	}
-
-	e.eGs.mu.RLock()
-	pid, err = e.eGs.whereis(prefix, name)
-	e.eGs.mu.RUnlock()
-
-	return
-}
-
-//
-func (e *Env) whereare(prefix string) (RegMap, error) {
-	if prefix == "" {
-		return nil, PrefixEmptyError
-	}
-
-	e.eGs.mu.RLock()
-	regs, err := e.eGs.whereare(prefix)
-	e.eGs.mu.RUnlock()
-
-	return regs, err
 }
 
 // ----------------------------------------------------------------------------
