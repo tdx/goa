@@ -2,6 +2,7 @@ package stdlib
 
 import (
 	"fmt"
+	"io"
 	"sync"
 	"sync/atomic"
 )
@@ -41,6 +42,24 @@ type envGs struct {
 //
 // API
 //
+func (e *envGs) Stat(w io.Writer) {
+	e.mu.RLock()
+
+	var (
+		regPrefixLen = len(e.regPrefix)
+		regName      = len(e.regName)
+		regNameByRef = len(e.regNameByRef)
+		regNameByPid = len(e.regNameByPid)
+	)
+
+	e.mu.RUnlock()
+
+	fmt.Fprintln(w, "regPrefix:", regPrefixLen)
+	fmt.Fprintln(w, "regName:", regName)
+	fmt.Fprintln(w, "regNameByRef:", regNameByRef)
+	fmt.Fprintln(w, "regNameByPid:", regNameByPid)
+}
+
 func mustNewEnvGs(e *Env) {
 	eGs := &envGs{envUID: e.uid}
 	_, err := e.GenServerStart(eGs)

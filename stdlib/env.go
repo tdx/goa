@@ -1,6 +1,8 @@
 package stdlib
 
 import (
+	"fmt"
+	"io"
 	"sync"
 	"sync/atomic"
 )
@@ -53,6 +55,17 @@ func NewEnv() *Env {
 	}
 
 	return e
+}
+
+//
+// Stat dump env statistics
+//
+func Stat(w io.Writer) {
+	if env.eGs != nil {
+		env.eGs.Stat(w)
+	} else {
+		fmt.Fprintln(w, "no gen server yet")
+	}
 }
 
 func (e *Env) id() uint32 {
