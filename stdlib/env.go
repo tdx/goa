@@ -61,10 +61,15 @@ func NewEnv() *Env {
 // Stat dump env statistics
 //
 func Stat(w io.Writer) {
-	if env.eGs != nil {
-		env.eGs.Stat(w)
+	env.Stat(w)
+}
+
+// Stat ...
+func (e *Env) Stat(w io.Writer) {
+	if e.eGs != nil {
+		e.eGs.Stat(w)
 	} else {
-		fmt.Fprintln(w, "no gen server yet")
+		fmt.Fprintln(w, "no gen_server started for env")
 	}
 }
 
