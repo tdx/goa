@@ -57,7 +57,7 @@ func (gs *envGs) Stat(w io.Writer) {
 	gs.StatDump(w, 10)
 }
 
-func (gs *envGs) StatDump(w io.Writer, dumpTunnels int) {
+func (gs *envGs) StatDump(w io.Writer, dumpNames int) {
 	regPrefixLens := make(map[string]int)
 
 	gs.mu.RLock()
@@ -83,18 +83,17 @@ func (gs *envGs) StatDump(w io.Writer, dumpTunnels int) {
 	fmt.Fprintln(w, "regNameByRef:", regNameByRef)
 	fmt.Fprintln(w, "regNameByPid:", regNameByPid)
 
-	if dumpTunnels > 0 {
+	if dumpNames > 0 {
 		gs.mu.RLock()
 		defer gs.mu.RUnlock()
 
-		fmt.Fprintln(w, dumpTunnels, "tunnels:")
+		fmt.Fprintln(w, dumpNames, "names:")
 
-		tunnels := gs.regPrefix["tunnel"]
 		i := 0
-		for k := range tunnels {
+		for k := range gs.regName {
 			fmt.Fprintln(w, k)
 			i++
-			if i > dumpTunnels {
+			if i > dumpNames {
 				break
 			}
 		}
