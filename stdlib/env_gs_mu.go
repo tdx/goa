@@ -67,6 +67,7 @@ func (gs *envGs) StatDump(w io.Writer, dumpNames int) {
 		regName      = len(gs.regName)
 		regNameByRef = len(gs.regNameByRef)
 		regNameByPid = len(gs.regNameByPid)
+		links        = len(gs.links)
 	)
 
 	for k, v := range gs.regPrefix {
@@ -75,6 +76,7 @@ func (gs *envGs) StatDump(w io.Writer, dumpNames int) {
 
 	gs.mu.RUnlock()
 
+	fmt.Fprintln(w, "env links:", links)
 	fmt.Fprintln(w, "regPrefix:", regPrefixLen)
 	for k, v := range regPrefixLens {
 		fmt.Fprintln(w, "regPrefix:", k, v)
