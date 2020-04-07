@@ -5,36 +5,33 @@ package stdlib
 //
 func (pid *Pid) monitorMe(mPid *Pid, ref Ref) {
 	pid.mu.Lock()
+	defer pid.mu.Unlock()
 
 	if pid.monitors == nil {
 		pid.monitors = make(map[Ref]*Pid)
 	}
 	pid.monitors[ref] = mPid
-
-	pid.mu.Unlock()
 }
 
 func (pid *Pid) demonitorMe(ref Ref) {
 	pid.mu.Lock()
+	defer pid.mu.Unlock()
 
 	if pid.monitors == nil {
-		pid.mu.Unlock()
 		return
 	}
 	delete(pid.monitors, ref)
-
-	pid.mu.Unlock()
 }
 
 func (pid *Pid) monitorByMe(mPid *Pid, ref Ref) {
 	pid.mu.Lock()
+	defer pid.mu.Unlock()
 
 	if pid.monitorsByMe == nil {
 		pid.monitorsByMe = make(map[Ref]*Pid)
 	}
 	pid.monitorsByMe[ref] = mPid
 
-	pid.mu.Unlock()
 }
 
 func (pid *Pid) demonitorByMe(ref Ref) *Pid {
