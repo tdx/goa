@@ -131,6 +131,7 @@ func (gs *envGs) HandleInfo(r Term) Term {
 
 	case *MonitorDownReq:
 		gs.unregNameByRef(r.MonitorRef)
+		gs.Self().demonitorByMe(r.MonitorRef)
 	}
 
 	return gs.NoReply()
