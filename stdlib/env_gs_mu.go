@@ -31,9 +31,11 @@ type envGs struct {
 	ref     uint64
 
 	// reg names
-	regPrefix    map[string]RegMap
-	regName      RegMap
-	regNameCount uint64
+	regPrefix map[string]RegMap
+	regName   RegMap
+
+	regNamesCount         uint64
+	recreateRegNamesCount uint64
 
 	// monitored regName, regPrefix processes
 	regNameByRef map[Ref]*Pid
@@ -81,6 +83,8 @@ func (gs *envGs) StatDump(w io.Writer, dumpNames int) {
 
 	gs.mu.RUnlock()
 
+	fmt.Fprintln(w, "regNamesCount        :", gs.regNamesCount)
+	fmt.Fprintln(w, "recreateRegNamesCount:", gs.recreateRegNamesCount)
 	fmt.Fprintln(w, "env links:", links)
 	fmt.Fprintln(w, "regPrefix:", regPrefixLen)
 	for k, v := range regPrefixLens {
@@ -188,10 +192,11 @@ func (gs *envGs) newRef() Ref {
 //
 func (gs *envGs) regPidName(name Term, pid *Pid) (bool, *Pid) {
 
-	if gs.regNameCount >= maxRegNameCount {
+	if gs.regNamesCount >= maxRegNameCount {
 		// periodically recreate maps
 		gs.recreateRegNames()
-		gs.regNameCount = 0
+		gs.regNamesCount = 0
+		gs.recreateRegNamesCount++
 	} else {
 		if gs.regName == nil {
 			gs.regName = make(RegMap)
@@ -210,7 +215,7 @@ func (gs *envGs) regPidName(name Term, pid *Pid) (bool, *Pid) {
 		gs.monitorPid(pid, "", name)
 		gs.dumpRegs("regPidName")
 
-		gs.regNameCount++
+		gs.regNamesCount++
 
 		return true, pid
 	}
