@@ -93,6 +93,8 @@ func (gs *envGs) StatDump(w io.Writer, dumpNames int) {
 	fmt.Fprintln(w, "regName:", regName)
 	fmt.Fprintln(w, "regNameByRef:", regNameByRef)
 	fmt.Fprintln(w, "regNameByPid:", regNameByPid)
+	fmt.Fprintln(w, "monitors    :", len(gs.Self().monitors))
+	fmt.Fprintln(w, "monitorsByMe:", len(gs.Self().monitorsByMe))
 
 	if dumpNames > 0 {
 		gs.mu.RLock()
@@ -227,18 +229,21 @@ func (gs *envGs) recreateRegNames() {
 	regName := make(RegMap, len(gs.regName))
 	for k, v := range gs.regName {
 		regName[k] = v
+		delete(gs.regName, k)
 	}
 	gs.regName = regName
 
 	regNameByRef := make(map[Ref]*Pid, len(gs.regNameByRef))
 	for k, v := range gs.regNameByRef {
 		regNameByRef[k] = v
+		delete(gs.regNameByRef, k)
 	}
 	gs.regNameByRef = regNameByRef
 
 	regNameByPid := make(map[*Pid]*refReg, len(gs.regNameByPid))
 	for k, v := range gs.regNameByPid {
 		regNameByPid[k] = v
+		delete(gs.regNameByPid, k)
 	}
 	gs.regNameByPid = regNameByPid
 
