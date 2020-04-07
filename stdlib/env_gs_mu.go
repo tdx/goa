@@ -31,13 +31,18 @@ type envGs struct {
 	ref     uint64
 
 	// reg names
-	regPrefix map[string]RegMap
-	regName   RegMap
+	regPrefix    map[string]RegMap
+	regName      RegMap
+	regNameCount uint64
 
 	// monitored regName, regPrefix processes
 	regNameByRef map[Ref]*Pid
 	regNameByPid map[*Pid]*refReg
 }
+
+const (
+	maxRegNameCount = 10000
+)
 
 //
 // API
@@ -183,13 +188,19 @@ func (gs *envGs) newRef() Ref {
 //
 func (gs *envGs) regPidName(name Term, pid *Pid) (bool, *Pid) {
 
-	if gs.regName == nil {
-		gs.regName = make(RegMap)
+	if gs.regNameCount >= maxRegNameCount {
+		// periodically recreate maps
+		gs.recreateRegNames()
+		gs.regNameCount = 0
+	} else {
+		if gs.regName == nil {
+			gs.regName = make(RegMap)
 
-	}
-	if gs.regNameByRef == nil {
-		gs.regNameByRef = make(map[Ref]*Pid)
-		gs.regNameByPid = make(map[*Pid]*refReg)
+		}
+		if gs.regNameByRef == nil {
+			gs.regNameByRef = make(map[Ref]*Pid)
+			gs.regNameByPid = make(map[*Pid]*refReg)
+		}
 	}
 
 	oldPid, ok := gs.regName[name]
@@ -199,10 +210,33 @@ func (gs *envGs) regPidName(name Term, pid *Pid) (bool, *Pid) {
 		gs.monitorPid(pid, "", name)
 		gs.dumpRegs("regPidName")
 
+		gs.regNameCount++
+
 		return true, pid
 	}
 
 	return false, oldPid
+}
+
+func (gs *envGs) recreateRegNames() {
+	regName := make(RegMap, len(gs.regName))
+	for k, v := range gs.regName {
+		regName[k] = v
+	}
+	gs.regName = regName
+
+	regNameByRef := make(map[Ref]*Pid, len(gs.regNameByRef))
+	for k, v := range gs.regNameByRef {
+		regNameByRef[k] = v
+	}
+	gs.regNameByRef = regNameByRef
+
+	regNameByPid := make(map[*Pid]*refReg, len(gs.regNameByPid))
+	for k, v := range gs.regNameByPid {
+		regNameByPid[k] = v
+	}
+	gs.regNameByPid = regNameByPid
+
 }
 
 //
@@ -399,32 +433,35 @@ func (gs *envGs) monitorPid(pid *Pid, prefix string, name Term) {
 
 func (gs *envGs) demonitorName(pid *Pid, prefix string, name Term) {
 
-	if refReg, ok := gs.regNameByPid[pid]; ok {
+	refReg, ok := gs.regNameByPid[pid]
+	if !ok {
+		return
+	}
 
-		matchedItem := -1
-		for i, nameReg := range refReg.names {
-			if nameReg.prefix == prefix && nameReg.name == name {
-				matchedItem = i
-				break
-			}
+	matchedItem := -1
+	for i := range refReg.names {
+		nameReg := refReg.names[i]
+		if nameReg.prefix == prefix && nameReg.name == name {
+			matchedItem = i
+			break
 		}
-		if matchedItem != -1 {
-			namesLen := len(refReg.names)
-			if namesLen > 1 {
-				refReg.names[matchedItem] = refReg.names[namesLen-1]
-				refReg.names = refReg.names[:namesLen-1]
-			} else {
-				refReg.names = nil
-			}
-		}
-
-		if len(refReg.names) == 0 {
-			gs.DemonitorProcessPid(refReg.ref)
-			delete(gs.regNameByRef, refReg.ref)
-			delete(gs.regNameByPid, pid)
+	}
+	if matchedItem != -1 {
+		namesLen := len(refReg.names)
+		if namesLen > 1 {
+			refReg.names[matchedItem] = refReg.names[namesLen-1]
+			refReg.names = refReg.names[:namesLen-1]
 		} else {
-			gs.regNameByPid[pid] = refReg
+			refReg.names = nil
 		}
+	}
+
+	if len(refReg.names) == 0 {
+		gs.DemonitorProcessPid(refReg.ref)
+		delete(gs.regNameByRef, refReg.ref)
+		delete(gs.regNameByPid, pid)
+	} else {
+		gs.regNameByPid[pid] = refReg
 	}
 }
 
