@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 )
@@ -719,6 +720,7 @@ type ts struct {
 	//
 	// monitor test
 	//
+	monMu          sync.RWMutex
 	monitorMessage string
 }
 
@@ -817,6 +819,8 @@ func (gs *ts) Init(args ...Term) Term {
 		}
 	}
 
+	gs.Self().RegisterMonitorDownFunc(gs.monitorDown)
+
 	return gs.InitOk()
 }
 
@@ -892,8 +896,8 @@ func (gs *ts) HandleInfo(req Term) Term {
 			return gs.Stop(gs.exitReason)
 		}
 
-	case *MonitorDownReq:
-		gs.monitorMessage = req.Reason
+	// case *MonitorDownReq:
+	// 	gs.monitorMessage = req.Reason
 
 	case string:
 		switch req {
@@ -1026,11 +1030,21 @@ func (gs *ts) handleString2(req string, from From) Term {
 		return gs.CallReply(pid)
 
 	case "monitorMessage":
-		return gs.CallReply(gs.monitorMessage)
+		gs.monMu.RLock()
+		ret := gs.CallReply(gs.monitorMessage)
+		gs.monMu.RUnlock()
+		return ret
 
 	default:
 		return req // should crash with unexpected return value
 	}
+}
+
+func (gs *ts) monitorDown(ref Ref, reason string) {
+	fmt.Println("monitorDown:", reason, ref)
+	gs.monMu.Lock()
+	gs.monitorMessage = reason
+	gs.monMu.Unlock()
 }
 
 //

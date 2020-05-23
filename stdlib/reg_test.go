@@ -133,6 +133,7 @@ func TestGenServerRegUnregName(t *testing.T) {
 		t.Fatalf("exprected '%s' error, actual '%s'", NotRegError, err)
 	}
 
+	t.Log("ok 1")
 	//
 	// reg/unreg normal is ok
 	//
@@ -141,10 +142,14 @@ func TestGenServerRegUnregName(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	t.Log("ok 2")
+
 	err = pid.Unregister(regTestName)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	t.Log("ok 3")
 
 	// 2 name reg for pid
 	if err := pid.Register(regTestName); err != nil {

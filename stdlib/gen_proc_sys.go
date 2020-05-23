@@ -247,7 +247,7 @@ func (gps *GenProcSys) MonitorProcessPid(pid *Pid) Ref {
 // DemonitorProcessPid removes the monitor for process identified by ref
 //
 func (gps *GenProcSys) DemonitorProcessPid(ref Ref) {
-	if pid := gps.pid.demonitorByMe(ref); pid != nil {
+	if pid := gps.pid.demonitorByMe(false, ref, ""); pid != nil {
 		pid.demonitorMe(ref)
 	}
 }

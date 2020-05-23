@@ -17,6 +17,8 @@ type Pid struct {
 	sysChan  chan Term
 	exitChan chan bool
 
+	monitorDownFunc MonitorDownFunc
+
 	mu           sync.RWMutex
 	monitorsByMe map[Ref]*Pid
 	monitors     map[Ref]*Pid

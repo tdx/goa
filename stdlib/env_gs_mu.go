@@ -120,22 +120,23 @@ func (gs *envGs) Init(args ...Term) Term {
 
 	gs.SetTrapExit(true)
 	// gs.SetTracer(TraceToConsole())
+	gs.Self().RegisterMonitorDownFunc(gs.monitorDown)
 
 	return gs.InitOk()
 }
 
 //
-func (gs *envGs) HandleInfo(r Term) Term {
+// func (gs *envGs) HandleInfo(r Term) Term {
 
-	switch r := r.(type) {
+// 	switch r := r.(type) {
 
-	case *MonitorDownReq:
-		gs.unregNameByRef(r.MonitorRef)
-		gs.Self().demonitorByMe(r.MonitorRef)
-	}
+// 	case *MonitorDownReq:
+// 		gs.unregNameByRef(r.MonitorRef)
+// 		// gs.Self().demonitorByMe(r.MonitorRef)
+// 	}
 
-	return gs.NoReply()
-}
+// 	return gs.NoReply()
+// }
 
 //
 func (gs *envGs) Terminate(reason string) {
@@ -145,6 +146,10 @@ func (gs *envGs) Terminate(reason string) {
 //
 // Locals
 //
+func (gs *envGs) monitorDown(ref Ref, reason string) {
+	gs.unregNameByRef(ref)
+}
+
 func (gs *envGs) regNewPid(
 	opts *SpawnOpts) (pid *Pid, isNewPid bool, err error) {
 	//

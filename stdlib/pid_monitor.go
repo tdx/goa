@@ -3,6 +3,15 @@ package stdlib
 //
 // Monitors
 //
+
+// MonitorDownFunc is a callback for handle MonitorDown
+type MonitorDownFunc func(ref Ref, reason string)
+
+// RegisterMonitorDownFunc registers callback function
+func (pid *Pid) RegisterMonitorDownFunc(fn MonitorDownFunc) {
+	pid.monitorDownFunc = fn
+}
+
 func (pid *Pid) monitorMe(mPid *Pid, ref Ref) {
 	pid.mu.Lock()
 	defer pid.mu.Unlock()
@@ -34,20 +43,41 @@ func (pid *Pid) monitorByMe(mPid *Pid, ref Ref) {
 
 }
 
-func (pid *Pid) demonitorByMe(ref Ref) *Pid {
-	pid.mu.Lock()
-	defer pid.mu.Unlock()
+// func (pid *Pid) demonitorByMe(ref Ref) *Pid {
+func (pid *Pid) demonitorByMe(onStop bool, ref Ref, reason string) *Pid {
 
-	if pid.monitorsByMe == nil {
+	var (
+		ok   bool
+		mPid *Pid
+	)
+
+	pid.mu.RLock()
+	monByMe := pid.monitorsByMe
+	if monByMe != nil {
+		mPid, ok = pid.monitorsByMe[ref]
+	}
+	pid.mu.RUnlock()
+
+	// fmt.Println(pid, "demontorByMe:", ok, mPid, pid.monitorDownFunc)
+
+	if monByMe == nil {
+		if onStop && pid.monitorDownFunc != nil {
+			pid.monitorDownFunc(ref, reason)
+		}
 		return nil
 	}
 
-	if mPid, ok := pid.monitorsByMe[ref]; ok {
+	if ok {
+		pid.mu.Lock()
 		delete(pid.monitorsByMe, ref)
-		return mPid
+		pid.mu.Unlock()
 	}
 
-	return nil
+	if onStop && pid.monitorDownFunc != nil {
+		pid.monitorDownFunc(ref, reason)
+	}
+
+	return mPid
 }
 
 //
@@ -61,20 +91,14 @@ func (pid *Pid) onStop(reason string) {
 
 	pid.mu.Unlock()
 
+	// fmt.Println(pid, "onStop")
+
 	for ref, mPid := range monitors {
 		pid.monitorDown(mPid, ref, reason)
 	}
 }
 
-//
-// MonitorDownReq is a message sent when monitored process died
-//
-type MonitorDownReq struct {
-	MonitorRef Ref
-	PidFrom    *Pid
-	Reason     string
-}
-
 func (pid *Pid) monitorDown(pidTo *Pid, ref Ref, reason string) {
-	_ = pidTo.Send(&MonitorDownReq{ref, pid, reason})
+	// fmt.Println(pidTo, "monitorDown:", reason, ref)
+	pidTo.demonitorByMe(true, ref, reason)
 }
