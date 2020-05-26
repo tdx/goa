@@ -341,6 +341,14 @@ func TestGenServerRegWhereare(t *testing.T) {
 		t.Fatalf("expected group '%s' has 1 member, actual %d",
 			regTestPrefixOne, len(pids))
 	}
+	cnt, err := env2.whereareCount(regTestPrefixOne)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cnt != 1 {
+		t.Fatalf("expected group '%s' has 1 member, actual %d",
+			regTestPrefixOne, cnt)
+	}
 
 	err = pid.UnregisterPrefix(regTestPrefixOne, regTestName)
 	if err != nil {
@@ -354,6 +362,14 @@ func TestGenServerRegWhereare(t *testing.T) {
 	if len(pids) != 0 {
 		t.Fatalf("expected group '%s' has 0 member, actual %d",
 			regTestPrefixOne, len(pids))
+	}
+	cnt, err = env2.whereareCount(regTestPrefixOne)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cnt != 0 {
+		t.Fatalf("expected group '%s' has 0 member, actual %d",
+			regTestPrefixOne, cnt)
 	}
 
 	err = pid.RegisterPrefix(regTestPrefixOne, regTestName)
@@ -377,6 +393,15 @@ func TestGenServerRegWhereare(t *testing.T) {
 		t.Fatalf("expected group '%s' has 3 member, actual %d",
 			regTestPrefixOne, len(pids))
 	}
+	cnt, err = env2.whereareCount(regTestPrefixOne)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cnt != 3 {
+		t.Fatalf("expected group '%s' has 3 member, actual %d",
+			regTestPrefixOne, cnt)
+	}
+
 }
 
 //

@@ -268,3 +268,16 @@ func (e *Env) whereare(prefix string) (RegMap, error) {
 
 	return regs, err
 }
+
+//
+func (e *Env) whereareCount(prefix string) (int, error) {
+	if prefix == "" {
+		return 0, PrefixEmptyError
+	}
+
+	e.eGs.mu.RLock()
+	n, err := e.eGs.whereareCount(prefix)
+	e.eGs.mu.RUnlock()
+
+	return n, err
+}

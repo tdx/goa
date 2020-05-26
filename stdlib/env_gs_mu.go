@@ -348,6 +348,18 @@ func (gs *envGs) whereare(prefix string) (RegMap, error) {
 	return nil, NotRegError
 }
 
+func (gs *envGs) whereareCount(prefix string) (int, error) {
+	if gs.regPrefix == nil {
+		return 0, NotRegError
+	}
+
+	if pids, ok := gs.regPrefix[prefix]; ok {
+		return len(pids), nil
+	}
+
+	return 0, NotRegError
+}
+
 //
 // Reg prefix + name
 //

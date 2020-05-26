@@ -83,8 +83,24 @@ func Whereare(prefix string) (RegMap, error) {
 }
 
 //
+// WhereareCount returns count of processes with specified prefix
+//  in default environment
+//
+func WhereareCount(prefix string) (int, error) {
+	return env.WhereareCount(prefix)
+}
+
+//
 // Whereare lookups processes by prefix in specified environment
 //
 func (e *Env) Whereare(prefix string) (RegMap, error) {
 	return e.whereare(prefix)
+}
+
+//
+// WhereareCount returns count of processes with specified prefix
+//  in specified environment
+//
+func (e *Env) WhereareCount(prefix string) (int, error) {
+	return e.whereareCount(prefix)
 }

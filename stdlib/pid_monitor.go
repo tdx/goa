@@ -91,14 +91,14 @@ func (pid *Pid) onStop(reason string) {
 
 	pid.mu.Unlock()
 
-	// fmt.Println(pid, "onStop")
-
 	for ref, mPid := range monitors {
-		pid.monitorDown(mPid, ref, reason)
+		// pid.monitorDown(mPid, ref, reason)
+		// remove self by 'ref' from monitored 'mPid'
+		mPid.demonitorByMe(true, ref, reason)
 	}
 }
 
-func (pid *Pid) monitorDown(pidTo *Pid, ref Ref, reason string) {
-	// fmt.Println(pidTo, "monitorDown:", reason, ref)
-	pidTo.demonitorByMe(true, ref, reason)
-}
+// func (pid *Pid) monitorDown(pidTo *Pid, ref Ref, reason string) {
+// 	// fmt.Println(pidTo, "monitorDown:", reason, ref)
+// 	pidTo.demonitorByMe(true, ref, reason)
+// }
