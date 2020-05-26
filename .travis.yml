@@ -19,7 +19,7 @@ script:
     - go vet $(go list ./... | grep -v /vendor/)
     - golint $(go list ./... | grep -v /vendor/)
     - errcheck -ignoretests -ignorepkg fmt $(go list ./... | grep -v /vendor/)
-    - gocyclo -avg -over 20 .
+    - gocyclo -avg -over 22 .
     - go test -race $(go list ./... | grep -v /vendor/)
     - go test -covermode=atomic -coverprofile=coverage.txt $(go list ./... | grep -v /vendor/)
 
